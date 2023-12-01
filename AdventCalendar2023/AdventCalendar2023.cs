@@ -46,8 +46,8 @@ namespace AdventCalendar2023
                             if (line.Substring(i).StartsWith(keyValuePair.Key))
                                 lineParsed += keyValuePair.Value;
                 }
-                string first = lineParsed.Where(w => char.IsDigit(w)).First().ToString();
-                string last = lineParsed.Where(w => char.IsDigit(w)).Last().ToString();
+                string first = lineParsed.First().ToString();
+                string last = lineParsed.Last().ToString();
                 int number = int.Parse(first + last);
                 sum += number;
             }
