@@ -1,28 +1,42 @@
+using System.Text.RegularExpressions;
+
 namespace AdventCalendar2023
 {
     [TestClass]
     public class WorkInProgress
     {
         [TestMethod]
-        public void Day1()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day1.txt").ToList();
-        }
-
-        [TestMethod]
-        public void Day2()
+        public void Day2_1()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day2.txt").ToList();
         }
 
         [TestMethod]
-        public void Day3()
+        public void Day2_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day2.txt").ToList();
+        }
+
+        [TestMethod]
+        public void Day3_1()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day3.txt").ToList();
         }
 
         [TestMethod]
-        public void Day4()
+        public void Day3_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day3.txt").ToList();
+        }
+
+        [TestMethod]
+        public void Day4_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day4.txt").ToList();
+        }
+
+        [TestMethod]
+        public void Day4_2()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day4.txt").ToList();
         }
