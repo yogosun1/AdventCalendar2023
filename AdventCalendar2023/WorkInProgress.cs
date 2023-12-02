@@ -6,18 +6,6 @@ namespace AdventCalendar2023
     public class WorkInProgress
     {
         [TestMethod]
-        public void Day2_1()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day2.txt").ToList();
-        }
-
-        [TestMethod]
-        public void Day2_2()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day2.txt").ToList();
-        }
-
-        [TestMethod]
         public void Day3_1()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day3.txt").ToList();
