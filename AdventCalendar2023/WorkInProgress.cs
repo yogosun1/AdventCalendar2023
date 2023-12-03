@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace AdventCalendar2023
@@ -5,17 +6,7 @@ namespace AdventCalendar2023
     [TestClass]
     public class WorkInProgress
     {
-        [TestMethod]
-        public void Day3_1()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day3.txt").ToList();
-        }
-
-        [TestMethod]
-        public void Day3_2()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day3.txt").ToList();
-        }
+        
 
         [TestMethod]
         public void Day4_1()

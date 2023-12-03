@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace AdventCalendar2023
 {
     [TestClass]
@@ -102,6 +104,98 @@ namespace AdventCalendar2023
                     minBlue = Math.Max(minBlue, int.Parse(string.IsNullOrEmpty(blueCountString) ? "0" : blueCountString));
                 }
                 sumGames += (minRed * minGreen * minBlue);
+            }
+        }
+
+        [TestMethod]
+        public void Day3_1()
+        {
+            List<Day3SchematicValue> schematic = Day3LoadSchematic(File.ReadAllLines(@"Input\Day3.txt").ToList());
+            int partSum = 0;
+            foreach (Day3SchematicValue part in schematic.Where(w => w.IsNumbers))
+                if (schematic.Any(w => w.Y >= (part.Y - 1) && w.Y <= (part.Y + 1) && w.StartX >= (part.StartX - 1) && w.EndX <= (part.EndX + 1) && !char.IsDigit(w.Value[0])))
+                    partSum += int.Parse(part.Value);
+        }
+
+        [TestMethod]
+        public void Day3_2()
+        {
+            List<Day3SchematicValue> schematic = Day3LoadSchematic(File.ReadAllLines(@"Input\Day3.txt").ToList());
+            int gearSum = 0;
+            foreach (Day3SchematicValue gear in schematic.Where(w => w.Value == "*"))
+            {
+                List<Day3SchematicValue> partList = schematic.Where(w => w.Y >= (gear.Y - 1) && w.Y <= (gear.Y + 1)
+                    && gear.StartX >= (w.StartX - 1) && gear.EndX <= (w.EndX + 1) && w.IsNumbers).ToList();
+                if (partList.Count() == 2)
+                    gearSum += partList.Select(s => int.Parse(s.Value)).Aggregate((x, y) => x * y);
+            }
+        }
+
+        private List<Day3SchematicValue> Day3LoadSchematic(List<string> inputList)
+        {
+            List<Day3SchematicValue> schematic = new List<Day3SchematicValue>();
+            int x, y = 0;
+            foreach (string input in inputList)
+            {
+                x = 0;
+                List<char> valueList = new List<char>();
+                int? startX = null, endX = null;
+                foreach (char c in input)
+                {
+                    if (!char.IsDigit(c))
+                    {
+                        if (c != '.')
+                            schematic.Add(new Day3SchematicValue { StartX = x, EndX = x, Y = y, Value = c.ToString(), IsNumbers = false });
+                        if (valueList.Count() > 0)
+                        {
+                            schematic.Add(new Day3SchematicValue { StartX = (int)startX, EndX = (int)endX, Y = y, Value = new string(valueList.ToArray()), IsNumbers = true });
+                            valueList.Clear();
+                            startX = null;
+                            endX = null;
+                        }
+                    }
+                    else if (char.IsDigit(c))
+                    {
+                        if (startX == null)
+                            startX = x;
+                        endX = x;
+                        valueList.Add(c);
+                    }
+                    x++;
+                }
+                if (valueList.Count() > 0)
+                    schematic.Add(new Day3SchematicValue { StartX = (int)startX, EndX = (int)endX, Y = y, Value = new string(valueList.ToArray()), IsNumbers = true });
+                y++;
+            }
+            return schematic;
+        }
+
+        private class Day3SchematicValue
+        {
+            public int StartX { get; set; }
+            public int EndX { get; set; }
+            public int Y { get; set; }
+            public string Value { get; set; }
+            public bool IsNumbers { get; set; }
+        }
+
+        private void Day3Print(List<Day3SchematicValue> schematic)
+        {
+            for (int y = 0; y <= schematic.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= schematic.Max(m => m.EndX); x++)
+                {
+                    Day3SchematicValue value = schematic.FirstOrDefault(w => w.Y == y && x >= w.StartX && x <= w.EndX);
+                    if (value == null)
+                        line += ".";
+                    else
+                    {
+                        line += value.Value;
+                        x = value.EndX;
+                    }
+                }
+                Debug.WriteLine(line);
             }
         }
     }
