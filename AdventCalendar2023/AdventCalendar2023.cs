@@ -198,5 +198,58 @@ namespace AdventCalendar2023
                 Debug.WriteLine(line);
             }
         }
+
+        [TestMethod]
+        public void Day4_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day4.txt").ToList();
+            int score = 0;
+            foreach (string input in inputList)
+            {
+                List<string> gameSplit = input.Split(':').ToList();
+                int game = int.Parse(gameSplit[0].Split(' ').Last());
+                List<string> numberList = gameSplit[1].Split('|').ToList();
+                List<int> winningNumberList = numberList[0].Split(' ').Where(w => !string.IsNullOrWhiteSpace(w)).Select(s => int.Parse(s)).ToList();
+                List<int> userNumberList = numberList[1].Split(' ').Where(w => !string.IsNullOrWhiteSpace(w)).Select(s => int.Parse(s)).ToList();
+                int gameScore = 0;
+                foreach (int win in winningNumberList)
+                    if (userNumberList.Contains(win))
+                        gameScore = gameScore == 0 ? 1 : gameScore * 2;
+                score += gameScore;
+            }
+        }
+
+        [TestMethod]
+        public void Day4_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day4.txt").ToList();
+            List<Day4Scratchcard> scratchcardList = new List<Day4Scratchcard>();
+            foreach (string input in inputList)
+            {
+                Day4Scratchcard scratchcard = new Day4Scratchcard();
+                List<string> gameSplit = input.Split(':').ToList();
+                scratchcard.game = int.Parse(gameSplit[0].Split(' ').Last());
+                List<string> numberList = gameSplit[1].Split('|').ToList();
+                scratchcard.winningNumbers = numberList[0].Split(' ').Where(w => !string.IsNullOrWhiteSpace(w)).Select(s => int.Parse(s)).ToList();
+                scratchcard.userNumbers = numberList[1].Split(' ').Where(w => !string.IsNullOrWhiteSpace(w)).Select(s => int.Parse(s)).ToList();
+                scratchcard.cardCount = 1;
+                scratchcardList.Add(scratchcard);
+            }
+            foreach (Day4Scratchcard scratchcard in scratchcardList)
+            {
+                int wins = scratchcard.winningNumbers.Where(w => scratchcard.userNumbers.Contains(w)).Count();
+                for (int i = 1; i <= wins; i++)
+                    scratchcardList.Where(w => w.game == (scratchcard.game + i)).ToList().ForEach(e => e.cardCount += scratchcard.cardCount);
+            }
+            int totalCardCount = scratchcardList.Sum(s => s.cardCount);
+        }
+
+        private class Day4Scratchcard
+        {
+            public List<int> winningNumbers { get; set; }
+            public List<int> userNumbers { get; set; }
+            public int cardCount { get; set; }
+            public int game { get; set; }
+        }
     }
 }
