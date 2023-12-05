@@ -251,5 +251,122 @@ namespace AdventCalendar2023
             public int cardCount { get; set; }
             public int game { get; set; }
         }
+
+        [TestMethod]
+        public void Day5_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day5.txt").ToList();
+            List<uint> seedList = inputList.First().Split(' ').Skip(1).Select(uint.Parse).ToList();
+            List<Day5Converter> converterList = Day5ParseConverterInput(inputList);
+            uint minValue = uint.MaxValue, currentValue;
+            foreach (uint seed in seedList)
+            {
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "seed-to-soil").ToList(), seed);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "soil-to-fertilizer").ToList(), currentValue);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "fertilizer-to-water").ToList(), currentValue);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "water-to-light").ToList(), currentValue);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "light-to-temperature").ToList(), currentValue);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "temperature-to-humidity").ToList(), currentValue);
+                currentValue = Day5_1Convert(converterList.Where(w => w.name == "humidity-to-location").ToList(), currentValue);
+                if (currentValue < minValue)
+                    minValue = currentValue;
+            }
+            Debug.WriteLine(minValue);
+        }
+
+        private uint Day5_1Convert(List<Day5Converter> converterList, uint source)
+        {
+            Day5Converter convert = converterList.FirstOrDefault(w => w.sourceStart <= source && (w.sourceStart + w.range) > source);
+            if (convert == null)
+                return source;
+            return convert.destinationStart + (source - convert.sourceStart);
+        }
+
+        [TestMethod]
+        public void Day5_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day5.txt").ToList();
+            List<uint> inputSeedList = inputList.First().Split(' ').Skip(1).Select(s => uint.Parse(s)).ToList();
+            List<Day5Seed> seedRangeList = new List<Day5Seed>();
+            for (int i = 0; i < inputSeedList.Count; i += 2)
+                seedRangeList.Add(new Day5Seed { seedStart = inputSeedList[i], range = inputSeedList[i + 1] });
+            List<Day5Converter> converterList = Day5ParseConverterInput(inputList);
+            uint minValue = uint.MaxValue;
+            foreach (Day5Seed seed in seedRangeList)
+            {
+                for (uint i = seed.seedStart; i < (seed.seedStart + seed.range); i++)
+                {
+                    Tuple<uint, uint> currentValue = new Tuple<uint, uint>(i, Math.Min(seed.range, seed.seedStart + seed.range - i));
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "seed-to-soil").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "soil-to-fertilizer").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "fertilizer-to-water").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "water-to-light").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "light-to-temperature").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "temperature-to-humidity").ToList(), currentValue);
+                    currentValue = Day5_2Convert(converterList.Where(w => w.name == "humidity-to-location").ToList(), currentValue);
+                    if (currentValue.Item1 < minValue)
+                        minValue = currentValue.Item1;
+                    i += (currentValue.Item2 - 1);
+                }
+            }
+            Debug.WriteLine(minValue);
+        }
+
+        private List<Day5Converter> Day5ParseConverterInput(List<string> inputList)
+        {
+            List<Day5Converter> converterList = new List<Day5Converter>();
+            string currentConverter = string.Empty;
+            foreach (string input in inputList.Skip(2))
+            {
+                Day5Converter converter = new Day5Converter();
+                if (input.Contains("map"))
+                {
+                    currentConverter = input.Split(' ')[0];
+                    continue;
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(input))
+                        continue;
+                    List<uint> inputSplit = input.Split(' ').Select(s => uint.Parse(s)).ToList();
+                    converter.destinationStart = inputSplit[0];
+                    converter.sourceStart = inputSplit[1];
+                    converter.range = inputSplit[2];
+                    converter.name = currentConverter;
+                }
+                converterList.Add(converter);
+            }
+            return converterList;
+        }
+
+        private Tuple<uint, uint> Day5_2Convert(List<Day5Converter> converterList, Tuple<uint, uint> source)
+        {
+            Day5Converter convert = converterList.FirstOrDefault(w => w.sourceStart <= source.Item1 && (w.sourceStart + w.range) > source.Item1);
+            if (convert != null)
+            {
+                uint start = convert.destinationStart + (source.Item1 - convert.sourceStart);
+                uint range = Math.Min(source.Item2, convert.destinationStart + convert.range - start);
+                return new Tuple<uint, uint>(start, range);
+            }
+            else
+            {
+                uint? nextStart = converterList.Where(w => w.sourceStart >= source.Item1 + source.Item2).OrderBy(o => o.sourceStart).FirstOrDefault()?.sourceStart;
+                return new Tuple<uint, uint>(source.Item1, nextStart != null ? Math.Min(source.Item2, (uint)nextStart - source.Item1) : source.Item2);
+            }
+        }
+
+        private class Day5Seed
+        {
+            public uint seedStart { get; set; }
+            public uint range { get; set; }
+        }
+
+        private class Day5Converter
+        {
+            public uint destinationStart { get; set; }
+            public uint sourceStart { get; set; }
+            public uint range { get; set; }
+            public string name { get; set; }
+        }
     }
 }
