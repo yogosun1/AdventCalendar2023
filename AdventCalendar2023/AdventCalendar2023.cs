@@ -368,5 +368,38 @@ namespace AdventCalendar2023
             public uint range { get; set; }
             public string name { get; set; }
         }
+
+        [TestMethod]
+        public void Day6_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day6.txt").ToList();
+            List<int> timeList = inputList.First().Split(' ').Skip(1).Where(w => !string.IsNullOrWhiteSpace(w)).Select(int.Parse).ToList();
+            List<int> distanceList = inputList.Last().Split(' ').Skip(1).Where(w => !string.IsNullOrWhiteSpace(w)).Select(int.Parse).ToList();
+            int sumWins = 1;
+            for (int i = 0; i < timeList.Count; i++)
+            {
+                int raceWinCount = 0;
+                int time = timeList[i];
+                int distance = distanceList[i];
+                for (int j = 1; j < time; j++)
+                    if (j * (time - j) > distance)
+                        raceWinCount++;
+                sumWins *= raceWinCount;
+            }
+            Debug.WriteLine(sumWins);
+        }
+
+        [TestMethod]
+        public void Day6_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day6.txt").ToList();
+            Int64 time = Int64.Parse(inputList.First().Replace(" ", "").Split(':').Last());
+            Int64 distance = Int64.Parse(inputList.Last().Replace(" ", "").Split(':').Last());
+            Int64 raceWinCount = 0;
+            for (Int64 j = 1; j < time; j++)
+                if (j * (time - j) > distance)
+                    raceWinCount++;
+            Debug.WriteLine(raceWinCount);
+        }
     }
 }
