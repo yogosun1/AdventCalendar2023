@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -10,21 +11,15 @@ namespace AdventCalendar2023
     public class WorkInProgress
     {
         [TestMethod]
-        public void Day7_1()
+        public void Day8_1()
         {
-            List<string> inputList = File.ReadAllLines(@"Input\Day7.txt").ToList();
+            List<string> inputList = File.ReadAllLines(@"Input\Day8Test.txt").ToList();
         }
 
         [TestMethod]
-        public void Day7_2()
+        public void Day8_2()
         {
-            List<string> inputList = File.ReadAllLines(@"Input\Day7.txt").ToList();
-        }
-
-        [TestMethod]
-        public void Day8()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day8.txt").ToList();
+            List<string> inputList = File.ReadAllLines(@"Input\Day8Test.txt").ToList();
         }
 
         [TestMethod]

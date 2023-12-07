@@ -401,5 +401,117 @@ namespace AdventCalendar2023
                     raceWinCount++;
             Debug.WriteLine(raceWinCount);
         }
+
+        [TestMethod]
+        public void Day7_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day7.txt").ToList();
+            List<Day7Card> cardList = new List<Day7Card>();
+            foreach (string input in inputList)
+            {
+                List<string> splitInput = input.Split(' ').ToList();
+                List<int> intCardList = splitInput[0].ToCharArray().Select(s => s == 'A' ? 14 : s == 'K' ? 13 : s == 'Q' ? 12 : s == 'J' ? 11 : s == 'T' ? 10 : int.Parse(s.ToString())).ToList();
+                Day7Card card = new Day7Card { cardList = intCardList, bid = int.Parse(splitInput[1]) };
+                var groupByCard = from p in card.cardList group p by p into g select new { Count = g.Count() };
+                if (groupByCard.Count() == 1)
+                    card.type = 7; // Five of a kind
+                else if (groupByCard.Count() == 2)
+                {
+                    if (groupByCard.Any(a => a.Count == 4))
+                        card.type = 6; // Four of a kind
+                    else
+                        card.type = 5; // Full house
+                }
+                else if (groupByCard.Count() == 3)
+                {
+                    if (groupByCard.Any(a => a.Count == 3))
+                        card.type = 4; // Three of a kind
+                    else
+                        card.type = 3; // Two pair
+                }
+                else if (groupByCard.Count() == 4)
+                    card.type = 2; // One pair
+                else
+                    card.type = 1; // High card
+                cardList.Add(card);
+            }
+            cardList = cardList.OrderBy(o => o.type).ThenBy(t => t.cardList[0]).ThenBy(t => t.cardList[1])
+                            .ThenBy(t => t.cardList[2]).ThenBy(t => t.cardList[3]).ThenBy(t => t.cardList[4]).ToList();
+            int rank = 1;
+            cardList.ForEach(e => e.rank = rank++);
+            int sum = cardList.Sum(s => (s.rank * s.bid));
+            Debug.WriteLine(sum);
+        }
+
+        [TestMethod]
+        public void Day7_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day7.txt").ToList();
+            List<Day7Card> cardList = new List<Day7Card>();
+            foreach (string input in inputList)
+            {
+                List<string> splitInput = input.Split(' ').ToList();
+                List<int> intCardList = splitInput[0].ToCharArray().Select(s => s == 'A' ? 14 : s == 'K' ? 13 : s == 'Q' ? 12 : s == 'J' ? 1 : s == 'T' ? 10 : int.Parse(s.ToString())).ToList();
+                Day7Card card = new Day7Card { cardList = intCardList, bid = int.Parse(splitInput[1]) };
+                var groupByCard = from p in intCardList group p by p into g select new { Count = g.Count() };
+                int jokerCount = intCardList.Where(w => w == 1).Count();
+                if (groupByCard.Count() == 1)
+                    card.type = 7; // Five of a kind
+                else if (groupByCard.Count() == 2)
+                {
+                    if (jokerCount > 0)
+                        card.type = 7; // Five of a kind
+                    else if (groupByCard.Any(a => a.Count == 4))
+                        card.type = 6; // Four of a kind
+                    else
+                        card.type = 5; // Full house
+                }
+                else if (groupByCard.Count() == 3)
+                {
+                    if (jokerCount > 1)
+                        card.type = 6; // Four of a kind
+                    else if (jokerCount == 1)
+                    {
+                        if (groupByCard.Any(a => a.Count == 3))
+                            card.type = 6; // Four of a kind
+                        else
+                            card.type = 5; // Full house
+                    }
+                    else if (groupByCard.Any(a => a.Count == 3))
+                        card.type = 4; // Three of a kind
+                    else
+                        card.type = 3; // Two pair
+                }
+                else if (groupByCard.Count() == 4)
+                {
+                    if (jokerCount > 0)
+                        card.type = 4; // Three of a kind
+                    else
+                        card.type = 2; // One pair
+                }
+                else
+                {
+                    if (jokerCount > 0)
+                        card.type = 2; // One pair
+                    else
+                        card.type = 1; // High card
+                }
+                cardList.Add(card);
+            }
+            cardList = cardList.OrderBy(o => o.type).ThenBy(t => t.cardList[0]).ThenBy(t => t.cardList[1])
+                .ThenBy(t => t.cardList[2]).ThenBy(t => t.cardList[3]).ThenBy(t => t.cardList[4]).ToList();
+            int rank = 1;
+            cardList.ForEach(e => e.rank = rank++);
+            int sum = cardList.Sum(s => (s.rank * s.bid));
+            Debug.WriteLine(sum);
+        }
+
+        private class Day7Card
+        {
+            public List<int> cardList { get; set; }
+            public int bid { get; set; }
+            public int rank { get; set; }
+            public int type { get; set; }
+        }
     }
 }
