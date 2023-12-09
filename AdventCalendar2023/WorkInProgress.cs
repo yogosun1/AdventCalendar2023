@@ -11,13 +11,13 @@ namespace AdventCalendar2023
     public class WorkInProgress
     {
         [TestMethod]
-        public void Day9()
+        public void Day10_1()
         {
-            List<string> inputList = File.ReadAllLines(@"Input\Day9.txt").ToList();
+            List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
         }
 
         [TestMethod]
-        public void Day10()
+        public void Day10_2()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
         }

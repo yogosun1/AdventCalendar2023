@@ -587,5 +587,35 @@ namespace AdventCalendar2023
             public string RightNode { get; set; }
             public int Steps { get; set; }
         }
+
+        [TestMethod]
+        public void Day9_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day9.txt").ToList();
+            long sum = 0;
+            inputList.ForEach(e => sum += Day9GetNextValue(e.Split(' ').Select(long.Parse).ToList(), true));
+            Debug.WriteLine(sum);
+        }
+
+        [TestMethod]
+        public void Day9_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day9.txt").ToList();
+            long sum = 0;
+            inputList.ForEach(e => sum += Day9GetNextValue(e.Split(' ').Select(long.Parse).ToList(), false));
+            Debug.WriteLine(sum);
+        }
+
+        private long Day9GetNextValue(List<long> valueList, bool isForward)
+        {
+            List<long> nextValueList = new List<long>();
+            for (int i = 0; i < (valueList.Count - 1); i++)
+                nextValueList.Add(valueList[i + 1] - valueList[i]);
+            if (nextValueList.Any(a => a != 0))
+                return isForward ? (valueList.Last() + Day9GetNextValue(nextValueList, isForward))
+                    : valueList.First() - Day9GetNextValue(nextValueList, isForward);
+            else
+                return valueList.FirstOrDefault();
+        }
     }
 }
