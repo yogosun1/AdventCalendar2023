@@ -617,5 +617,287 @@ namespace AdventCalendar2023
             else
                 return valueList.FirstOrDefault();
         }
+
+        [TestMethod]
+        public void Day10_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
+            List<Day10Position> grid = new List<Day10Position>();
+            int y = 0;
+            foreach (string input in inputList)
+            {
+                int x = 0;
+                foreach (char c in input)
+                    grid.Add(new Day10Position { X = x++, Y = y, Type = c, LoopPart = false, Visited = false });
+                y++;
+            }
+            Dictionary<string, List<char>> directionList = new Dictionary<string, List<char>>
+            {
+                { "east", new List<char> { 'J', '7', '-', 'S' } },
+                { "west", new List<char> { 'L', 'F', '-', 'S' } },
+                { "north", new List<char> { 'F', '7', '|', 'S' } },
+                { "south", new List<char> { 'L', 'J', '|', 'S' } }
+            };
+            Day10Position currentPos = grid.FirstOrDefault(w => w.Type == 'S');
+            currentPos.Distance = 0;
+            Day10Position east = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y && directionList.FirstOrDefault(w => w.Key == "east").Value.Contains(w.Type));
+            Day10Position west = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y && directionList.FirstOrDefault(w => w.Key == "west").Value.Contains(w.Type));
+            Day10Position north = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1 && directionList.FirstOrDefault(w => w.Key == "north").Value.Contains(w.Type));
+            Day10Position south = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1 && directionList.FirstOrDefault(w => w.Key == "south").Value.Contains(w.Type));
+            if (!Day10IsPartOfLoop(west, grid, "west", directionList))
+                if (!Day10IsPartOfLoop(east, grid, "east", directionList))
+                    if (!Day10IsPartOfLoop(north, grid, "north", directionList))
+                        Day10IsPartOfLoop(south, grid, "south", directionList);
+            Debug.WriteLine(Math.Round(((double)grid.Where(w => w.LoopPart).Max(m => m.Distance)) / 2, MidpointRounding.ToPositiveInfinity));
+        }
+
+        [TestMethod]
+        public void Day10_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
+            List<Day10Position> grid = new List<Day10Position>();
+            int y = 0;
+            foreach (string input in inputList)
+            {
+                int x = 0;
+                foreach (char c in input)
+                    grid.Add(new Day10Position { X = x++, Y = y, Type = c, LoopPart = false, Visited = false, Marked = false });
+                y++;
+            }
+            Dictionary<string, List<char>> directionList = new Dictionary<string, List<char>>
+            {
+                { "east", new List<char> { 'J', '7', '-', 'S' } },
+                { "west", new List<char> { 'L', 'F', '-', 'S' } },
+                { "north", new List<char> { 'F', '7', '|', 'S' } },
+                { "south", new List<char> { 'L', 'J', '|', 'S' } }
+            };
+            Day10Position currentPos = grid.FirstOrDefault(w => w.Type == 'S');
+            currentPos.Distance = 0;
+            Day10Position east = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y && directionList.FirstOrDefault(w => w.Key == "east").Value.Contains(w.Type));
+            Day10Position west = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y && directionList.FirstOrDefault(w => w.Key == "west").Value.Contains(w.Type));
+            Day10Position north = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1 && directionList.FirstOrDefault(w => w.Key == "north").Value.Contains(w.Type));
+            Day10Position south = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1 && directionList.FirstOrDefault(w => w.Key == "south").Value.Contains(w.Type));
+            if (!Day10IsPartOfLoop(west, grid, "west", directionList))
+                if (!Day10IsPartOfLoop(east, grid, "east", directionList))
+                    if (!Day10IsPartOfLoop(north, grid, "north", directionList))
+                        Day10IsPartOfLoop(south, grid, "south", directionList);
+            if (!Day10MarkInsideLoop(grid, "west"))
+                if (!Day10MarkInsideLoop(grid, "east"))
+                    if (!Day10MarkInsideLoop(grid, "north"))
+                        Day10MarkInsideLoop(grid, "south");
+            Debug.WriteLine(grid.Where(w => w.Marked).Count());
+        }
+
+        private bool Day10IsPartOfLoop(Day10Position position, List<Day10Position> grid, string newDirection, Dictionary<string, List<char>> directionList)
+        {
+            if (position == null)
+                return false;
+            Day10Position nextPosition = position;
+            List<Day10Position> loopList = new List<Day10Position>();
+            int distance = 0;
+            while (nextPosition != null && nextPosition?.Type != 'S')
+            {
+                loopList.Add(nextPosition);
+                nextPosition.Visited = true;
+                nextPosition.Distance = ++distance;
+                List<char> allowedTypes;
+                if (nextPosition.Type == '|')
+                {
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "south" ? query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y + 1) : query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y - 1);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else if (nextPosition.Type == '-')
+                {
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "east" ? query.Where(w => w.X == nextPosition.X + 1 && w.Y == nextPosition.Y) : query.Where(w => w.X == nextPosition.X - 1 && w.Y == nextPosition.Y);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else if (nextPosition.Type == 'L')
+                {
+                    newDirection = newDirection == "south" ? "east" : "north";
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "east" ? query.Where(w => w.X == nextPosition.X + 1 && w.Y == nextPosition.Y) : query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y - 1);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else if (nextPosition.Type == 'J')
+                {
+                    newDirection = newDirection == "south" ? "west" : "north";
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "west" ? query.Where(w => w.X == nextPosition.X - 1 && w.Y == nextPosition.Y) : query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y - 1);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else if (nextPosition.Type == '7')
+                {
+                    newDirection = newDirection == "north" ? "west" : "south";
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "west" ? query.Where(w => w.X == nextPosition.X - 1 && w.Y == nextPosition.Y) : query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y + 1);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else if (nextPosition.Type == 'F')
+                {
+                    newDirection = newDirection == "north" ? "east" : "south";
+                    allowedTypes = directionList.FirstOrDefault(w => w.Key == newDirection).Value;
+                    var query = grid.Where(w => !w.Visited && allowedTypes.Contains(w.Type));
+                    query = newDirection == "east" ? query.Where(w => w.X == nextPosition.X + 1 && w.Y == nextPosition.Y) : query.Where(w => w.X == nextPosition.X && w.Y == nextPosition.Y + 1);
+                    nextPosition = query.FirstOrDefault();
+                }
+                else
+                    nextPosition = null;
+            }
+            if (nextPosition?.Type == 'S')
+            {
+                loopList.Add(nextPosition);
+                loopList.ForEach(e => e.LoopPart = true);
+            }
+            return nextPosition != null;
+        }
+
+        private bool Day10MarkInsideLoop(List<Day10Position> grid, string startSide)
+        {
+            grid.ForEach(e => e.Marked = false);
+            Day10Position nextPosition = null;
+            string currentMarkDirection = startSide;
+            int maxDistance = grid.Where(w => w.LoopPart).Max(m => (int)m.Distance);
+            int currentDistance = -1;
+            while (true)
+            {
+                nextPosition = grid.First(w => w.LoopPart && w.Distance == currentDistance + 1);
+                if (nextPosition.Type == '|' || nextPosition.Type == '-' || nextPosition.Type == 'S')
+                {
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                }
+                else if (nextPosition.Type == 'L')
+                {
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                    currentMarkDirection = currentMarkDirection == "east" ? "north"
+                        : currentMarkDirection == "west" ? "south"
+                        : currentMarkDirection == "north" ? "east"
+                        : "west";
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                }
+                else if (nextPosition.Type == 'J')
+                {
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                    currentMarkDirection = currentMarkDirection == "east" ? "south"
+                        : currentMarkDirection == "west" ? "north"
+                        : currentMarkDirection == "north" ? "west"
+                        : "east";
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                }
+                else if (nextPosition.Type == '7')
+                {
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                    currentMarkDirection = currentMarkDirection == "east" ? "north"
+                        : currentMarkDirection == "west" ? "south"
+                        : currentMarkDirection == "north" ? "east"
+                        : "west";
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                }
+                else if (nextPosition.Type == 'F')
+                {
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                    currentMarkDirection = currentMarkDirection == "east" ? "south"
+                        : currentMarkDirection == "west" ? "north"
+                        : currentMarkDirection == "north" ? "west"
+                        : "east";
+                    if (!Day10MarkDirection(currentMarkDirection, nextPosition, grid))
+                        return false;
+                }
+                else
+                    nextPosition = null;
+                if (nextPosition.Distance == maxDistance)
+                    break;
+                currentDistance++;
+            }
+            return true;
+        }
+
+        private bool Day10MarkDirection(string currentMarkDirection, Day10Position nextPosition, List<Day10Position> grid)
+        {
+            Day10Position edge = null;
+            List<Day10Position> markList = new List<Day10Position>();
+            if (currentMarkDirection == "east")
+            {
+                edge = grid.Where(w => w.X > nextPosition.X && w.Y == nextPosition.Y && w.LoopPart).OrderBy(o => o.X).FirstOrDefault();
+                if (edge == null)
+                    return false;
+                markList = grid.Where(w => w.X > nextPosition.X && w.Y == nextPosition.Y && !w.LoopPart && w.X < edge.X && w.Y == edge.Y).OrderBy(o => o.X).ToList();
+            }
+            else if (currentMarkDirection == "west")
+            {
+                edge = grid.Where(w => w.X < nextPosition.X && w.Y == nextPosition.Y && w.LoopPart).OrderByDescending(o => o.X).FirstOrDefault();
+                if (edge == null)
+                    return false;
+                markList = grid.Where(w => w.X < nextPosition.X && w.Y == nextPosition.Y && !w.LoopPart && w.X > edge.X && w.Y == edge.Y).OrderBy(o => o.X).ToList();
+            }
+            else if (currentMarkDirection == "north")
+            {
+                edge = grid.Where(w => w.X == nextPosition.X && w.Y < nextPosition.Y && w.LoopPart).OrderByDescending(o => o.Y).FirstOrDefault();
+                if (edge == null)
+                    return false;
+                markList = grid.Where(w => w.X == nextPosition.X && w.Y < nextPosition.Y && !w.LoopPart && w.X == edge.X && w.Y > edge.Y).OrderBy(o => o.X).ToList();
+            }
+            else if (currentMarkDirection == "south")
+            {
+                edge = grid.Where(w => w.X == nextPosition.X && w.Y > nextPosition.Y && w.LoopPart).OrderBy(o => o.Y).FirstOrDefault();
+                if (edge == null)
+                    return false;
+                markList = grid.Where(w => w.X == nextPosition.X && w.Y > nextPosition.Y && !w.LoopPart && w.X == edge.X && w.Y < edge.Y).OrderBy(o => o.X).ToList();
+            }
+            markList.ForEach(e => e.Marked = true);
+            return true;
+        }
+
+        private void Day10PrintGrid(List<Day10Position> grid, int type)
+        {
+            for (int y = 0; y <= grid.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= grid.Max(m => m.X); x++)
+                {
+                    Day10Position pos = grid.First(w => w.X == x && w.Y == y);
+                    if (type == 1)
+                        line += (pos.Distance?.ToString() ?? pos.Type.ToString()).PadRight(2);
+                    else if (type == 2)
+                        line += pos.LoopPart ? "T" : pos.Marked ? "M" : pos.Type;
+                    else if (type == 3)
+                        line += pos.Marked ? "I" : pos.Type;
+                }
+                Debug.WriteLine(line);
+            }
+        }
+
+        private class Day10Position
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int? Distance { get; set; }
+            public char Type { get; set; }
+            public bool LoopPart { get; set; }
+            public bool Visited { get; set; }
+            public bool Marked { get; set; }
+            //| is a vertical pipe connecting north and south.
+            //- is a horizontal pipe connecting east and west.
+            //L is a 90-degree bend connecting north and east.
+            //J is a 90-degree bend connecting north and west.
+            //7 is a 90-degree bend connecting south and west.
+            //F is a 90-degree bend connecting south and east.
+            //. is ground; there is no pipe in this tile.
+            //S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
+        }
     }
 }

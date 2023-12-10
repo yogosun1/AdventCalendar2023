@@ -3,6 +3,8 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Security;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace AdventCalendar2023
@@ -10,18 +12,6 @@ namespace AdventCalendar2023
     [TestClass]
     public class WorkInProgress
     {
-        [TestMethod]
-        public void Day10_1()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
-        }
-
-        [TestMethod]
-        public void Day10_2()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day10.txt").ToList();
-        }
-
         [TestMethod]
         public void Day11()
         {
