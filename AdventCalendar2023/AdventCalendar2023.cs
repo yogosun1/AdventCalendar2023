@@ -899,5 +899,104 @@ namespace AdventCalendar2023
             //. is ground; there is no pipe in this tile.
             //S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
         }
+
+        [TestMethod]
+        public void Day11_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day11.txt").ToList();
+            List<Day11Galaxy> universe = new List<Day11Galaxy>();
+            int x = 0, y = 0;
+            foreach (string row in inputList)
+            {
+                x = 0;
+                foreach (char c in row)
+                {
+                    if (c == '#')
+                        universe.Add(new Day11Galaxy { Y = y, X = x, IsChecked = false });
+                    x++;
+                }
+                y++;
+            }
+            Day11ExpandUniverse(universe, 1);
+            long distance = Day11CalculateDistance(universe);
+            Debug.WriteLine(distance);
+        }
+
+        [TestMethod]
+        public void Day11_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day11.txt").ToList();
+            List<Day11Galaxy> universe = new List<Day11Galaxy>();
+            int x = 0, y = 0;
+            foreach (string row in inputList)
+            {
+                x = 0;
+                foreach (char c in row)
+                {
+                    if (c == '#')
+                        universe.Add(new Day11Galaxy { Y = y, X = x, IsChecked = false });
+                    x++;
+                }
+                y++;
+            }
+            long distance1 = Day11CalculateDistance(universe);
+            Day11ExpandUniverse(universe, 1);
+            long distance2 = Day11CalculateDistance(universe);
+            Debug.WriteLine(distance1 + (distance2 - distance1) * 999999);
+        }
+
+        private long Day11CalculateDistance(List<Day11Galaxy> universe)
+        {
+            long sumLength = 0;
+            universe.ForEach(e => e.IsChecked = false);
+            foreach (Day11Galaxy galaxy in universe)
+            {
+                galaxy.IsChecked = true;
+                foreach (Day11Galaxy galaxy2 in universe.Where(w => !w.IsChecked))
+                    sumLength += Math.Abs(galaxy.X - galaxy2.X) + Math.Abs(galaxy.Y - galaxy2.Y);
+            }
+            return sumLength;
+        }
+
+        private void Day11ExpandUniverse(List<Day11Galaxy> universe, int expansionRate)
+        {
+            for (int y = 0; y < universe.Max(m => m.Y); y++)
+            {
+                if (!universe.Any(a => a.Y == y))
+                {
+                    universe.Where(w => w.Y > y).ToList().ForEach(e => e.Y += expansionRate);
+                    y += expansionRate;
+                }
+            }
+            for (int x = 0; x < universe.Max(m => m.X); x++)
+            {
+                if (!universe.Any(a => a.X == x))
+                {
+                    universe.Where(w => w.X > x).ToList().ForEach(e => e.X += expansionRate);
+                    x += expansionRate;
+                }
+            }
+        }
+
+        private class Day11Galaxy
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public bool IsChecked { get; set; }
+        }
+
+        private void Day11PrintUniverse(List<Day11Galaxy> universe)
+        {
+            for (int y = 0; y <= universe.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= universe.Max(m => m.X); x++)
+                {
+                    Day11Galaxy galaxy = universe.FirstOrDefault(w => w.Y == y && w.X == x);
+                    line += galaxy != null ? "#" : ".";
+                }
+                Debug.WriteLine(line);
+            }
+        }
     }
 }
