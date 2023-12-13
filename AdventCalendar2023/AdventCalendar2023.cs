@@ -998,5 +998,279 @@ namespace AdventCalendar2023
                 Debug.WriteLine(line);
             }
         }
+
+        [TestMethod]
+        public void Day13_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day13.txt").ToList();
+            List<Day13Pattern> patternList = Day13ParsePattern(inputList);
+            int summarize = 0;
+            foreach (Day13Pattern pattern in patternList)
+            {
+                Tuple<int, string> reflection = Day13FindReflectionLines(pattern).First();
+                pattern.ReflectionLine = reflection.Item1;
+                pattern.ReflectionType = reflection.Item2;
+                Debug.WriteLine("PatternNr: " + pattern.PatternNr + " Summarize: " + summarize + " ReflectionLine: " + pattern.ReflectionLine + " ReflectionType: " + pattern.ReflectionType);
+                summarize += pattern.ReflectionType == "row" ? pattern.ReflectionLine * 100 : pattern.ReflectionLine;
+            }
+            Debug.WriteLine(summarize);
+        }
+
+        [TestMethod]
+        public void Day13_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day13.txt").ToList();
+            List<Day13Pattern> patternList = Day13ParsePattern(inputList);
+            int summarize = 0;
+            foreach (Day13Pattern pattern in patternList)
+            {
+                Tuple<int, string> reflection = Day13FindReflectionLines(pattern).First();
+                pattern.ReflectionLine = reflection.Item1;
+                pattern.ReflectionType = reflection.Item2;
+                Day13FixSmudge(pattern);
+                summarize += pattern.ReflectionType == "row" ? pattern.ReflectionLine * 100 : pattern.ReflectionLine;
+                Debug.WriteLine("PatternNr: " + pattern.PatternNr + " Summarize: " + summarize + " ReflectionLine: " + pattern.ReflectionLine + " ReflectionType: " + pattern.ReflectionType);
+            }
+            Debug.WriteLine(summarize);
+        }
+
+        private void Day13FixSmudge(Day13Pattern pattern)
+        {
+            bool isFixed = false;
+            int maxY = pattern.Grid.Max(m => m.Y);
+            int maxX = pattern.Grid.Max(m => m.X);
+            for (int y = 1; y <= maxY; y++)
+            {
+                for (int u = y + 1; u <= maxY; u++)
+                {
+                    string currentRow1 = string.Join("", pattern.Grid.Where(w => w.Y == y).Select(s => s.Value));
+                    string currentRow2 = string.Join("", pattern.Grid.Where(w => w.Y == u).Select(s => s.Value));
+                    Tuple<int, int> match = Day13StringMatch(currentRow1, currentRow2);
+                    if (match.Item1 == 1)
+                    {
+                        Day13Position pos = pattern.Grid.First(w => w.Y == y && w.X == match.Item2);
+                        pos.Value = pos.Value == '.' ? '#' : '.';
+                        List<Tuple<int, string>> reflectionList = Day13FindReflectionLines(pattern);
+                        Tuple<int, string> reflection = reflectionList.FirstOrDefault(w => w.Item1 > -1 && (w.Item1 != pattern.ReflectionLine || w.Item2 != pattern.ReflectionType));
+                        if (reflection != null)
+                        {
+                            isFixed = true;
+                            pattern.ReflectionLine = reflection.Item1;
+                            pattern.ReflectionType = reflection.Item2;
+                            break;
+                        }
+                        else
+                            pos.Value = pos.Value == '.' ? '#' : '.';
+                    }
+                }
+                if (isFixed)
+                    break;
+            }
+            if (!isFixed)
+            {
+                for (int x = 1; x <= maxX; x++)
+                {
+                    for (int u = x + 1; u <= maxX; u++)
+                    {
+                        string currentRow1 = string.Join("", pattern.Grid.Where(w => w.X == x).Select(s => s.Value));
+                        string currentRow2 = string.Join("", pattern.Grid.Where(w => w.X == u).Select(s => s.Value));
+                        Tuple<int, int> match = Day13StringMatch(currentRow1, currentRow2);
+                        if (match.Item1 == 1)
+                        {
+                            Day13Position pos = pattern.Grid.First(w => w.Y == match.Item2 && w.X == x);
+                            pos.Value = pos.Value == '.' ? '#' : '.';
+                            List<Tuple<int, string>> reflectionList = Day13FindReflectionLines(pattern);
+                            Tuple<int, string> reflection = reflectionList.FirstOrDefault(w => w.Item1 > -1 && (w.Item1 != pattern.ReflectionLine || w.Item2 != pattern.ReflectionType));
+                            if (reflection != null)
+                            {
+                                isFixed = true;
+                                pattern.ReflectionLine = reflection.Item1;
+                                pattern.ReflectionType = reflection.Item2;
+                                break;
+                            }
+                            else
+                                pos.Value = pos.Value == '.' ? '#' : '.';
+                        }
+                    }
+                    if (isFixed)
+                        break;
+                }
+            }
+        }
+
+        private Tuple<int, int> Day13StringMatch(string string1, string string2)
+        {
+            int mismatchCount = 0;
+            int mismatchIndex = -1;
+            for (int i = 0; i < string1.Length; i++)
+            {
+                if (string1[i] != string2[i])
+                {
+                    mismatchCount++;
+                    mismatchIndex = i;
+                }
+            }
+            return new Tuple<int, int>(mismatchCount, mismatchIndex + 1);
+        }
+
+        private List<Day13Pattern> Day13ParsePattern(List<string> inputList)
+        {
+            List<Day13Pattern> patternList = new List<Day13Pattern>();
+            int patternNr = 1;
+            Day13Pattern patternInput = new Day13Pattern { Grid = new List<Day13Position>(), PatternNr = patternNr };
+            patternList.Add(patternInput);
+            int y = 1, x = 1;
+            foreach (string input in inputList)
+            {
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    patternNr++;
+                    patternInput = new Day13Pattern { Grid = new List<Day13Position>(), PatternNr = patternNr };
+                    patternList.Add(patternInput);
+                    y = 0;
+                }
+                else
+                {
+                    x = 1;
+                    foreach (char c in input)
+                    {
+                        patternInput.Grid.Add(new Day13Position { Y = y, X = x, Value = c });
+                        x++;
+                    }
+                }
+                y++;
+            }
+            return patternList;
+        }
+
+        private List<Tuple<int, string>> Day13FindReflectionLines(Day13Pattern pattern)
+        {
+            int reflectionLine = -1;
+            int maxY = pattern.Grid.Max(m => m.Y);
+            int maxX = pattern.Grid.Max(m => m.X);
+            int minY = 1;
+            int minX = 1;
+            string firstRow = string.Join("", pattern.Grid.Where(w => w.Y == minY).Select(s => s.Value));
+            string lastRow = string.Join("", pattern.Grid.Where(w => w.Y == maxY).Select(s => s.Value));
+            string firstColumn = string.Join("", pattern.Grid.Where(w => w.X == minX).Select(s => s.Value));
+            string lastColumn = string.Join("", pattern.Grid.Where(w => w.X == maxX).Select(s => s.Value));
+            List<Tuple<int, string>> returnList = new List<Tuple<int, string>>();
+            for (int y = 1; y <= maxY; y++)
+            {
+                string currentRow = string.Join("", pattern.Grid.Where(w => w.Y == y).Select(s => s.Value));
+                if (y != maxY && currentRow == lastRow)
+                {
+                    if ((y + maxY) % 2 != 1)
+                        continue;
+                    reflectionLine = Day13ValidateMirror(pattern, y, maxY, true);
+                    if (reflectionLine > -1)
+                        returnList.Add(new Tuple<int, string>(reflectionLine, "row"));
+                }
+                if (y != minY && currentRow == firstRow)
+                {
+                    if ((y + minY) % 2 != 1)
+                        continue;
+                    reflectionLine = Day13ValidateMirror(pattern, minY, y, true);
+                    if (reflectionLine > -1)
+                        returnList.Add(new Tuple<int, string>(reflectionLine, "row"));
+                }
+            }
+            for (int x = 1; x <= maxX; x++)
+            {
+                string currentRow = string.Join("", pattern.Grid.Where(w => w.X == x).Select(s => s.Value));
+                if (x != maxX && currentRow == lastColumn)
+                {
+                    if ((x + maxX) % 2 != 1)
+                        continue;
+                    reflectionLine = Day13ValidateMirror(pattern, x, maxX, false);
+                    if (reflectionLine > -1)
+                        returnList.Add(new Tuple<int, string>(reflectionLine, "column"));
+                }
+                if (x != minX && currentRow == firstColumn)
+                {
+                    if ((x + minX) % 2 != 1)
+                        continue;
+                    reflectionLine = Day13ValidateMirror(pattern, minX, x, false);
+                    if (reflectionLine > -1)
+                        returnList.Add(new Tuple<int, string>(reflectionLine, "column"));
+                }
+            }
+            return returnList;
+        }
+
+        private int Day13ValidateMirror(Day13Pattern pattern, int pos1, int pos2, bool checkRows)
+        {
+            bool isMirrored = true;
+            string side1 = string.Empty, side2 = string.Empty;
+            int smaller = pos1 < pos2 ? pos1 : pos2;
+            int bigger = pos1 > pos2 ? pos1 : pos2;
+            while (true)
+            {
+                if (bigger - smaller == 2)
+                {
+                    isMirrored = false;
+                    break;
+                }
+                else if ((bigger - smaller) > 2)
+                {
+                    bigger--;
+                    smaller++;
+                    if (checkRows)
+                    {
+                        side1 = string.Join("", pattern.Grid.Where(w => w.Y == bigger).Select(s => s.Value));
+                        side2 = string.Join("", pattern.Grid.Where(w => w.Y == smaller).Select(s => s.Value));
+                    }
+                    else
+                    {
+                        side1 = string.Join("", pattern.Grid.Where(w => w.X == bigger).Select(s => s.Value));
+                        side2 = string.Join("", pattern.Grid.Where(w => w.X == smaller).Select(s => s.Value));
+                    }
+                    if (side1 != side2)
+                    {
+                        isMirrored = false;
+                        break;
+                    }
+                }
+                else
+                    break;
+            }
+            if (isMirrored)
+                return smaller;
+            else
+                return -1;
+        }
+
+        private void Day13Print(Day13Pattern pattern)
+        {
+            for (int y = 1; y <= pattern.Grid.Max(m => m.Y); y++)
+            {
+                string row = string.Empty;
+                for (int x = 1; x <= pattern.Grid.Max(m => m.X); x++)
+                {
+                    row += pattern.Grid.First(w => w.Y == y && w.X == x).Value;
+                    if (pattern.ReflectionType == "column" && x == pattern.ReflectionLine)
+                        row += "|";
+                }
+                Debug.WriteLine(row);
+                if (pattern.ReflectionType == "row" && y == pattern.ReflectionLine)
+                    Debug.WriteLine("".PadRight(pattern.Grid.Max(m => m.X), '-'));
+
+            }
+        }
+
+        private class Day13Pattern
+        {
+            public List<Day13Position> Grid { get; set; }
+            public int ReflectionLine { get; set; }
+            public string ReflectionType { get; set; }
+            public int PatternNr { get; set; }
+        }
+
+        private class Day13Position
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public char Value { get; set; }
+        }
     }
 }
