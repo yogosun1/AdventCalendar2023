@@ -421,7 +421,11 @@ namespace AdventCalendar2023
                 groups.Add(group);
             }
             Day12SolvePartOfSprings(groups);
+            Day12SolvePartOfSprings2(groups);
             Day12SolvePartOfSprings(groups);
+            foreach (Day12Group group in groups)
+                Debug.WriteLine("Before: " + group.OriginalSprings + " After: " + group.Springs + " " + string.Join(',', group.DamageList));
+
             long arrangements = 0;
             long tests = 0;
             int groupCount = groups.Count();
@@ -457,7 +461,7 @@ namespace AdventCalendar2023
                 int[] operationalPrefillList = new int[operationalList.Count()];
                 for (i = 0; i < operationalList.Count(); i++)
                     operationalPrefillList[i] = operationalList[i];
-                Debug.WriteLine("operationalPrefillList: " + string.Join(',', operationalPrefillList));
+                //Debug.WriteLine("operationalPrefillList: " + string.Join(',', operationalPrefillList));
                 stopwatchInitGroup.Stop();
                 while (true)
                 {
@@ -492,7 +496,7 @@ namespace AdventCalendar2023
                 currentGroup++;
                 arrangementList.Add(arrangements);
                 //File.AppendAllText(@"C:\Temp\AdventOfCoreDay12_2.txt", "Group: " + currentGroup + " Arrangements: " + arrangements + Environment.NewLine);
-                //Debug.WriteLine("Group: " + currentGroup + " Arrangements: " + arrangements + " Tests: " + testCount + " Springs: " + group.Springs + " " + string.Join(',', group.DamageList));
+                Debug.WriteLine("Group: " + currentGroup + " Arrangements: " + arrangements + " Tests: " + testCount + " Springs: " + group.Springs + " " + string.Join(',', group.DamageList));
             }
             stopwatch.Stop();
             Debug.WriteLine("Arrangements: " + arrangementList.Sum() + " Tests: " + tests
@@ -507,11 +511,11 @@ namespace AdventCalendar2023
         }
 
         [TestMethod]
-        public void Day12_2_3Trimmed()
+        public void Day12_2_4Testing()
         {
             List<string> inputList = File.ReadAllLines(@"Input\Day12.txt").ToList();
             List<Day12Group> groups = new List<Day12Group>();
-            int i = 0, k = 0;
+            int i = 0, p = 0, k = 0;
             foreach (string groupInput in inputList)
             {
                 List<string> splitInput = groupInput.Split(' ').ToList();
@@ -522,53 +526,78 @@ namespace AdventCalendar2023
                     springInput += "?" + splitInput[0];
                     damageInput += "," + splitInput[1];
                 }
-                Day12Group group = new Day12Group { DamageList = new List<int>(), Springs = springInput };
+                Day12Group group = new Day12Group { DamageList = new List<int>(), Springs = springInput, OriginalSprings = springInput };
                 group.DamageList = damageInput.Split(',').Select(int.Parse).ToList();
                 group.UnknownList = springInput.Split('.').Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
                 groups.Add(group);
             }
+            Day12SolvePartOfSprings(groups);
+            Day12SolvePartOfSprings2(groups);
+            Day12SolvePartOfSprings(groups);
+            //foreach (Day12Group group in groups)
+            //    Debug.WriteLine("Before: " + group.OriginalSprings + " After: " + group.Springs + " " + string.Join(',', group.DamageList));
+
             long arrangements = 0;
+            long tests = 0;
             int groupCount = groups.Count();
-            int currentGroup = 0;
+            int currentGroup = 0, currentIndex = 0;
+            Stopwatch stopwatchInitGroup = new Stopwatch();
+            Stopwatch stopwatchValidation = new Stopwatch();
+            Stopwatch stopwatchSwitchIndex = new Stopwatch();
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             List<long> arrangementList = new List<long>();
             foreach (Day12Group group in groups)
             {
-                arrangements = 0;
-                int maxLength = group.Springs.Length;
-                string test = string.Empty;
-                int[] operationalList = new int[group.DamageList.Count];
-                for (i = 0; i < operationalList.Length; i++)
-                    operationalList[i] = 1;
-                operationalList[0] = group.Springs.IndexOfAny(new char[] { '?', '#' });
-                int maxOperational = group.Springs.Length - group.DamageList.Sum();
-                int minEndingOperationalSpring = group.Springs.Length - (group.Springs.LastIndexOfAny(new char[] { '?', '#' }) + 1);
-                maxOperational -= minEndingOperationalSpring;
-                int oIndex = operationalList.Length - 1;
-                Day12PrefillOperationalList(group, operationalList);
-                int[] operationalPrefillList = new int[operationalList.Count()];
-                for (i = 0; i < operationalList.Count(); i++)
-                    operationalPrefillList[i] = operationalList[i];
-                while (true)
+                if (groups.IndexOf(group) == 1)
                 {
-                    if (Day12IsValid2(group, operationalList))
-                        arrangements++;
-                    operationalList[oIndex]++;
-                    while (operationalList.Sum() > maxOperational && oIndex > 0)
-                    {
-                        for (k = oIndex; k < operationalList.Length; k++)
-                            operationalList[k] = operationalPrefillList[k];
-                        oIndex--;
-                        operationalList[oIndex]++;
-                    }
-                    if (operationalList.Sum() > maxOperational)
-                        break;
-                    oIndex = operationalList.Length - 1;
+
                 }
+                arrangements = 0;
+                stopwatchInitGroup.Stop();
+                arrangements = Day12TestArrangements(group.Springs, group.DamageList);
                 currentGroup++;
                 arrangementList.Add(arrangements);
-                File.AppendAllText(@"C:\Temp\AdventOfCoreDay12_2.txt", "Group: " + currentGroup + " Arrangements: " + arrangements + Environment.NewLine);
+                //File.AppendAllText(@"C:\Temp\AdventOfCoreDay12_2.txt", "Group: " + currentGroup + " Arrangements: " + arrangements + Environment.NewLine);
+                Debug.WriteLine("Group: " + currentGroup + " Arrangements: " + arrangements + " Springs: " + group.Springs + " " + string.Join(',', group.DamageList));
             }
-            File.AppendAllText(@"C:\Temp\AdventOfCoreDay12_2.txt", "Arrangements: " + arrangementList.Sum() + Environment.NewLine);
+            stopwatch.Stop();
+            Debug.WriteLine("Arrangements: " + arrangementList.Sum() + " Tests: " + tests
+                + " Elapsed: " + stopwatch.Elapsed
+                + " stopwatchInitGroup: " + stopwatchInitGroup.Elapsed
+                + " stopwatchValidation: " + stopwatchValidation.Elapsed
+                + " stopwatchSwitchIndex: " + stopwatchSwitchIndex.Elapsed
+                + " Total minus init: " + (stopwatch.Elapsed - stopwatchInitGroup.Elapsed)
+                + " Important time: " + (stopwatchValidation.Elapsed + stopwatchSwitchIndex.Elapsed)
+                );
+            //File.AppendAllText(@"C:\Temp\AdventOfCoreDay12_2.txt", "Arrangements: " + arrangementList.Sum() + Environment.NewLine);
+        }
+
+        private long Day12TestArrangements(string springs, List<int> damageList)
+        {
+            if (springs.Count(c => c == '#' || c == '?') < damageList.Sum())
+                return 0;
+            else if (damageList.Count() == 0 && !springs.Any(a => a == '#'))
+                return 1;
+            else if (damageList.Count() == 0 && springs.Any(a => a == '#'))
+                return 0;
+            else if (springs[0] == '.')
+                return Day12TestArrangements(springs.Substring(1), damageList);
+            else if (springs.Length < (damageList.Sum() + damageList.Count() - 1))
+                return 0;
+            else if (springs[0] == '#')
+            {
+                if ((springs.Length > damageList.First() && springs[damageList.First()] == '#')
+                    || springs.Take(damageList.First()).Any(a => a == '.'))
+                    return 0;
+                return Day12TestArrangements(
+                    springs.Length == damageList.First() ? springs.Substring(damageList.First()) : '.' + springs.Substring(damageList.First() + 1)
+                    , damageList.Count() > 0 ? damageList.Skip(1).ToList() : null);
+            }
+            else if (springs[0] == '?')
+                return Day12TestArrangements('.' + springs.Substring(1), damageList)
+                    + Day12TestArrangements('#' + springs.Substring(1), damageList);
+            return 0;
         }
 
         private void Day12PrefillOperationalList(Day12Group group, int[] operationalList)
@@ -716,6 +745,21 @@ namespace AdventCalendar2023
                             for (int s = i + edge; s < i + unknown.Length - edge; s++)
                                 if (group.Springs[s] == '?')
                                     group.Springs = group.Springs.ReplaceAt(s, '#');
+                            int firstIndex = unknown.IndexOf('#');
+                            int lastIndex = unknown.LastIndexOf('#');
+                            if (firstIndex + damaged < unknown.Length)
+                            {
+                                for (int s = i + firstIndex + damaged; s < i + unknown.Length; s++)
+                                    if (group.Springs[s] == '?')
+                                        group.Springs = group.Springs.ReplaceAt(s, '.');
+                            }
+                            if (lastIndex - damaged > 0)
+                            {
+                                int index = lastIndex - damaged;
+                                for (int s = i; s < i + index; s++)
+                                    if (group.Springs[s] == '?')
+                                        group.Springs = group.Springs.ReplaceAt(s, '.');
+                            }
                             i += (unknown.Length - 1);
                         }
                         else if (equalUnknown && unknown.Count() == damaged)
@@ -750,7 +794,7 @@ namespace AdventCalendar2023
                             i += (unknown.Length - 1);
                             damageIndex--;
                         }
-                        else if (unknown.Substring(0, damaged-1).Contains('#') && unknown.Substring(0, damaged).Contains('?'))
+                        else if (unknown.Substring(0, damaged - 1).Contains('#') && unknown.Substring(0, damaged).Contains('?'))
                         {
                             int edge = unknown.Substring(0, damaged - 1).IndexOf('#');
                             for (int s = i + edge; s < i + damaged; s++)
@@ -847,7 +891,7 @@ namespace AdventCalendar2023
                             i -= (unknown.Length - 1);
                             damageIndex++;
                         }
-                        else if (unknown.Substring(unknown.Length-damaged, damaged - 1).Contains('#') && unknown.Substring(unknown.Length - damaged -1, damaged - 1).Contains('?'))
+                        else if (unknown.Substring(unknown.Length - damaged, damaged - 1).Contains('#') && unknown.Substring(unknown.Length - damaged - 1, damaged - 1).Contains('?'))
                         {
                             int edge = unknown.Length - unknown.LastIndexOf('#');
                             for (int s = i - edge; s > i - damaged; s--)
@@ -869,11 +913,29 @@ namespace AdventCalendar2023
                         damageIndex--;
                     }
                 }
-                Debug.WriteLine("Before: " + group.OriginalSprings + " After: " + group.Springs + " " + string.Join(',', group.DamageList));
+                //Debug.WriteLine("Before: " + group.OriginalSprings + " After: " + group.Springs + " " + string.Join(',', group.DamageList));
                 group.UnknownList = group.Springs.Split('.').Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
             }
         }
 
+        private void Day12SolvePartOfSprings2(List<Day12Group> groups)
+        {
+            foreach (Day12Group group in groups)
+            {
+                int largestDamage = group.DamageList.Max();
+                List<string> bigUnknown = group.UnknownList.Where(w => w.Count() >= largestDamage).ToList();
+                if (bigUnknown.Count() == 1)
+                {
+                    string unknown = bigUnknown.FirstOrDefault();
+                    int index = group.Springs.IndexOf(unknown);
+                    int edge = unknown.Length - largestDamage;
+                    for (int s = index + edge; s < index + unknown.Length - edge; s++)
+                        if (group.Springs[s] == '?')
+                            group.Springs = group.Springs.ReplaceAt(s, '#');
+                }
+                group.UnknownList = group.Springs.Split('.').Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
+            }
+        }
 
         private bool Day12IsValid(string test, string group)
         {
@@ -931,3 +993,4 @@ namespace AdventCalendar2023
         //}
     }
 }
+
