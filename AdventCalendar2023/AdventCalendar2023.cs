@@ -2038,5 +2038,88 @@ namespace AdventCalendar2023
             public int X { get; set; }
             public char Type { get; set; }
         }
+
+        [TestMethod]
+        public void Day15_1()
+        {
+            List<string> initSequence = File.ReadAllLines(@"Input\Day15.txt").ToList().First().Split(',').ToList();
+            long sum = 0;
+            foreach (string s in initSequence)
+                sum += Day15HASH(s);
+            Debug.WriteLine(sum);
+        }
+
+        [TestMethod]
+        public void Day15_2()
+        {
+            List<string> initSequence = File.ReadAllLines(@"Input\Day15.txt").ToList().First().Split(',').ToList();
+            List<Day15Instruction> instructions = new List<Day15Instruction>();
+            foreach (string instructionInput in initSequence)
+            {
+                Day15Instruction instruction = new Day15Instruction();
+                instruction.Label = instructionInput.Substring(0, instructionInput.IndexOfAny(new char[] { '-', '=' }));
+                instruction.BoxNr = Day15HASH(instruction.Label);
+                instruction.Operation = instructionInput[instructionInput.IndexOfAny(new char[] { '-', '=' })];
+                instruction.FocalLength = instruction.Operation == '=' ? int.Parse(instructionInput.Last().ToString()) : null;
+                instructions.Add(instruction);
+            }
+            List<Day15Box> boxList = new List<Day15Box>();
+            foreach (Day15Instruction instruction in instructions)
+            {
+                Day15Box box = boxList.FirstOrDefault(w => w.BoxNr == instruction.BoxNr);
+                if (box == null)
+                {
+                    box = new Day15Box { BoxNr = instruction.BoxNr, LensList = new List<Day15Lens>() };
+                    boxList.Add(box);
+                }
+                Day15Lens lens = box.LensList.FirstOrDefault(w => w.Label == instruction.Label);
+                if (instruction.Operation == '=')
+                {
+                    if (lens == null)
+                        box.LensList.Add(new Day15Lens { FocalLength = (int)instruction.FocalLength, Label = instruction.Label });
+                    else
+                        lens.FocalLength = (int)instruction.FocalLength;
+                }
+                else if (instruction.Operation == '-' && lens != null)
+                    box.LensList.Remove(lens);
+            }
+            int totalFocusingPower = 0;
+            foreach (Day15Box box in boxList)
+                foreach (Day15Lens lens in box.LensList)
+                    totalFocusingPower += (1 + box.BoxNr) * (box.LensList.IndexOf(lens) + 1) * lens.FocalLength;
+            Debug.WriteLine(totalFocusingPower);
+        }
+
+        private int Day15HASH(string input)
+        {
+            int hash = 0;
+            foreach (char c in input)
+            {
+                hash += (int)c;
+                hash *= 17;
+                hash %= 256;
+            }
+            return hash;
+        }
+
+        private class Day15Box
+        {
+            public int BoxNr { get; set; }
+            public List<Day15Lens> LensList { get; set; }
+        }
+
+        private class Day15Lens
+        {
+            public string Label { get; set; }
+            public int FocalLength { get; set; }
+        }
+
+        private class Day15Instruction
+        {
+            public string Label { get; set; }
+            public int BoxNr { get; set; }
+            public char Operation { get; set; }
+            public int? FocalLength { get; set; }
+        }
     }
 }
