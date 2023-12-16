@@ -2121,5 +2121,184 @@ namespace AdventCalendar2023
             public char Operation { get; set; }
             public int? FocalLength { get; set; }
         }
+
+        [TestMethod]
+        public void Day16_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day16.txt").ToList();
+            List<Day16Position> grid = new List<Day16Position>();
+            int y = 0, x = 0;
+            foreach (string input in inputList)
+            {
+                x = 0;
+                foreach (char c in input)
+                    grid.Add(new Day16Position { X = x++, Y = y, Type = c, IsEnergized = false });
+                y++;
+            }
+            Day16MoveLight(grid, grid.First(w => w.X == 0 && w.Y == 0), "east");
+            Debug.WriteLine(grid.Count(c => c.IsEnergized)); // 6978
+        }
+
+        [TestMethod]
+        public void Day16_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day16.txt").ToList();
+            List<Day16Position> grid = new List<Day16Position>();
+            int y = 0, x = 0;
+            foreach (string input in inputList)
+            {
+                x = 0;
+                foreach (char c in input)
+                    grid.Add(new Day16Position { X = x++, Y = y, Type = c, IsEnergized = false });
+                y++;
+            }
+            int maxEnergy = 0;
+            int maxX = grid.Max(m => m.X);
+            int maxY = grid.Max(m => m.Y);
+            for (y = 0; y <= maxY; y++)
+            {
+                grid.Where(w => w.IsEnergized).ToList().ForEach(e => { e.IsEnergized = false; e.EnergizedByList = new List<string>(); });
+                Day16MoveLight(grid, grid.First(w => w.X == 0 && w.Y == y), "east");
+                int energy = grid.Count(c => c.IsEnergized);
+                if (energy > maxEnergy)
+                    maxEnergy = energy;
+                grid.Where(w => w.IsEnergized).ToList().ForEach(e => { e.IsEnergized = false; e.EnergizedByList = new List<string>(); });
+                Day16MoveLight(grid, grid.First(w => w.X == maxX && w.Y == y), "west");
+                energy = grid.Count(c => c.IsEnergized);
+                if (energy > maxEnergy)
+                    maxEnergy = energy;
+            }
+            for (x = 0; x <= maxX; x++)
+            {
+                grid.Where(w => w.IsEnergized).ToList().ForEach(e => { e.IsEnergized = false; e.EnergizedByList = new List<string>(); });
+                Day16MoveLight(grid, grid.First(w => w.X == x && w.Y == 0), "south");
+                int energy = grid.Count(c => c.IsEnergized);
+                if (energy > maxEnergy)
+                    maxEnergy = energy;
+                grid.Where(w => w.IsEnergized).ToList().ForEach(e => { e.IsEnergized = false; e.EnergizedByList = new List<string>(); });
+                Day16MoveLight(grid, grid.First(w => w.X == x && w.Y == maxY), "north");
+                energy = grid.Count(c => c.IsEnergized);
+                if (energy > maxEnergy)
+                    maxEnergy = energy;
+            }
+            Debug.WriteLine(maxEnergy); // 7315
+        }
+
+        private void Day16MoveLight(List<Day16Position> grid, Day16Position currentPos, string direction)
+        {
+            while (true)
+            {
+                if (currentPos == null)
+                    return;
+                if (currentPos.IsEnergized && currentPos.EnergizedByList.Contains(direction))
+                    return;
+                currentPos.IsEnergized = true;
+                currentPos.EnergizedByList.Add(direction);
+                if (currentPos.Type == '.')
+                {
+                    if (direction == "east")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y);
+                    else if (direction == "west")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y);
+                    else if (direction == "south")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1);
+                    else
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1);
+                }
+                else if (currentPos.Type == '\\')
+                {
+                    if (direction == "east")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1);
+                        direction = "south";
+                    }
+                    else if (direction == "west")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1);
+                        direction = "north";
+                    }
+                    else if (direction == "south")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y);
+                        direction = "east";
+                    }
+                    else
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y);
+                        direction = "west";
+                    }
+                }
+                else if (currentPos.Type == '/')
+                {
+                    if (direction == "east")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1);
+                        direction = "north";
+                    }
+                    else if (direction == "west")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1);
+                        direction = "south";
+                    }
+                    else if (direction == "south")
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y);
+                        direction = "west";
+                    }
+                    else
+                    {
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y);
+                        direction = "east";
+                    }
+                }
+                else if (currentPos.Type == '-')
+                {
+                    if (direction == "east")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y);
+                    else if (direction == "west")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y);
+                    else
+                    {
+                        Day16MoveLight(grid, grid.FirstOrDefault(w => w.X == currentPos.X + 1 && w.Y == currentPos.Y), "east");
+                        Day16MoveLight(grid, grid.FirstOrDefault(w => w.X == currentPos.X - 1 && w.Y == currentPos.Y), "west");
+                    }
+                }
+                else if (currentPos.Type == '|')
+                {
+                    if (direction == "south")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1);
+                    else if (direction == "north")
+                        currentPos = grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1);
+                    else
+                    {
+                        Day16MoveLight(grid, grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y - 1), "north");
+                        Day16MoveLight(grid, grid.FirstOrDefault(w => w.X == currentPos.X && w.Y == currentPos.Y + 1), "south");
+                    }
+                }
+            }
+        }
+
+        private void Day16Print(List<Day16Position> grid)
+        {
+            for (int y = 0; y <= grid.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= grid.Max(m => m.X); x++)
+                {
+                    Day16Position pos = grid.First(w => w.X == x && w.Y == y);
+                    line += pos.IsEnergized ? "#" : pos.Type;
+                }
+                Debug.WriteLine(line);
+            }
+        }
+
+        private class Day16Position
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public char Type { get; set; }
+            public bool IsEnergized { get; set; }
+            public List<string> EnergizedByList = new List<string>();
+        }
     }
 }
