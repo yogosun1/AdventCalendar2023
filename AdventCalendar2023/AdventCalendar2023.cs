@@ -2337,24 +2337,21 @@ namespace AdventCalendar2023
 
         private int Day17CalculateMinHeatLoss(List<Day17Position> gridList, short minMoveDistance, short maxMoveDistance)
         {
-            List<Day17QueueItem> queue = new List<Day17QueueItem>();
+            PriorityQueue<Day17QueueItem, int> queue = new();
             HashSet<string> tested = new HashSet<string>();
             Dictionary<string, Day17Position> grid = new Dictionary<string, Day17Position>();
             gridList.ForEach(e => grid.Add(e.X + "-" + e.Y, e));
-            queue.Add(new Day17QueueItem { Pos = grid.First(w => w.Key == "0-0").Value });
+            queue.Enqueue(new Day17QueueItem { Pos = grid.First(w => w.Key == "0-0").Value }, 0);
             int maxX = gridList.Max(m => m.X);
             int maxY = gridList.Max(m => m.Y);
-            int loops = 0;
+            int loops = 0, dummy;
             int minHeatLoss = int.MaxValue;
-            while (true)
+            Day17QueueItem currentPos;
+            while (queue.TryDequeue(out currentPos, out dummy))
             {
                 loops++;
-                if (loops % 1000 == 0)
-                    queue.RemoveAll(w => w.CurrentHeatLoss >= minHeatLoss);
-                Day17QueueItem currentPos = queue.Where(w => w.CurrentHeatLoss < minHeatLoss).OrderBy(o => o.Priority).FirstOrDefault();
                 if (currentPos == null)
                     return minHeatLoss;
-                queue.Remove(currentPos);
                 if (currentPos.Pos.X == maxX && currentPos.Pos.Y == maxY)
                 {
                     if (minHeatLoss > currentPos.CurrentHeatLoss && (currentPos.East + currentPos.West + currentPos.North + currentPos.South) >= minMoveDistance)
@@ -2370,7 +2367,7 @@ namespace AdventCalendar2023
                         if (!tested.Contains(key))
                         {
                             Day17QueueItem newItem = new Day17QueueItem { CurrentHeatLoss = currentPos.CurrentHeatLoss + pos.HeatLoss, Priority = maxX + maxY - pos.X - pos.Y + currentPos.CurrentHeatLoss + pos.HeatLoss, Pos = pos, East = currentPos.East + 1, West = 0, North = 0, South = 0 };
-                            queue.Add(newItem);
+                            queue.Enqueue(newItem, newItem.Priority);
                             tested.Add(key);
                         }
                     }
@@ -2384,7 +2381,7 @@ namespace AdventCalendar2023
                         if (!tested.Contains(key))
                         {
                             Day17QueueItem newItem = new Day17QueueItem { CurrentHeatLoss = currentPos.CurrentHeatLoss + pos.HeatLoss, Priority = maxX + maxY - pos.X - pos.Y + currentPos.CurrentHeatLoss + pos.HeatLoss, Pos = pos, East = 0, West = currentPos.West + 1, North = 0, South = 0 };
-                            queue.Add(newItem);
+                            queue.Enqueue(newItem, newItem.Priority);
                             tested.Add(key);
                         }
                     }
@@ -2398,7 +2395,7 @@ namespace AdventCalendar2023
                         if (!tested.Contains(key))
                         {
                             Day17QueueItem newItem = new Day17QueueItem { CurrentHeatLoss = currentPos.CurrentHeatLoss + pos.HeatLoss, Priority = maxX + maxY - pos.X - pos.Y + currentPos.CurrentHeatLoss + pos.HeatLoss, Pos = pos, East = 0, West = 0, North = currentPos.North + 1, South = 0 };
-                            queue.Add(newItem);
+                            queue.Enqueue(newItem, newItem.Priority);
                             tested.Add(key);
                         }
                     }
@@ -2412,12 +2409,13 @@ namespace AdventCalendar2023
                         if (!tested.Contains(key))
                         {
                             Day17QueueItem newItem = new Day17QueueItem { CurrentHeatLoss = currentPos.CurrentHeatLoss + pos.HeatLoss, Priority = maxX + maxY - pos.X - pos.Y + currentPos.CurrentHeatLoss + pos.HeatLoss, Pos = pos, East = 0, West = 0, North = 0, South = currentPos.South + 1 };
-                            queue.Add(newItem);
+                            queue.Enqueue(newItem, newItem.Priority);
                             tested.Add(key);
                         }
                     }
                 }
             }
+            return minHeatLoss;
         }
 
         private class Day17Position
