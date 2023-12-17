@@ -2335,13 +2335,15 @@ namespace AdventCalendar2023
             Debug.WriteLine(minHeatLoss); // 1067
         }
 
-        private int Day17CalculateMinHeatLoss(List<Day17Position> grid, short minMoveDistance, short maxMoveDistance)
+        private int Day17CalculateMinHeatLoss(List<Day17Position> gridList, short minMoveDistance, short maxMoveDistance)
         {
             List<Day17QueueItem> queue = new List<Day17QueueItem>();
             HashSet<string> tested = new HashSet<string>();
-            queue.Add(new Day17QueueItem { Pos = grid.First(w => w.X == 0 && w.Y == 0) });
-            int maxX = grid.Max(m => m.X);
-            int maxY = grid.Max(m => m.Y);
+            Dictionary<string, Day17Position> grid = new Dictionary<string, Day17Position>();
+            gridList.ForEach(e => grid.Add(e.X + "-" + e.Y, e));
+            queue.Add(new Day17QueueItem { Pos = grid.First(w => w.Key == "0-0").Value });
+            int maxX = gridList.Max(m => m.X);
+            int maxY = gridList.Max(m => m.Y);
             int loops = 0;
             int minHeatLoss = int.MaxValue;
             while (true)
@@ -2361,8 +2363,8 @@ namespace AdventCalendar2023
                 }
                 if (currentPos.East < maxMoveDistance && currentPos.West == 0 && ((currentPos.North + currentPos.South) >= minMoveDistance || currentPos.East > 0 || (currentPos.Pos.X + currentPos.Pos.Y) == 0))
                 {
-                    Day17Position pos = grid.FirstOrDefault(w => w.X == currentPos.Pos.X + 1 && w.Y == currentPos.Pos.Y && currentPos.CurrentHeatLoss + w.HeatLoss < minHeatLoss);
-                    if (pos != null)
+                    Day17Position pos;
+                    if (grid.TryGetValue(currentPos.Pos.X + 1 + "-" + currentPos.Pos.Y, out pos) && currentPos.CurrentHeatLoss + pos.HeatLoss < minHeatLoss)
                     {
                         string key = pos.X + " " + pos.Y + " " + currentPos.East + 1 + " " + 0 + " " + 0 + " " + 0;
                         if (!tested.Contains(key))
@@ -2375,8 +2377,8 @@ namespace AdventCalendar2023
                 }
                 if (currentPos.West < maxMoveDistance && currentPos.East == 0 && ((currentPos.North + currentPos.South) >= minMoveDistance || currentPos.West > 0))
                 {
-                    Day17Position pos = grid.FirstOrDefault(w => w.X == currentPos.Pos.X - 1 && w.Y == currentPos.Pos.Y && currentPos.CurrentHeatLoss + w.HeatLoss < minHeatLoss);
-                    if (pos != null)
+                    Day17Position pos;
+                    if (grid.TryGetValue(currentPos.Pos.X - 1 + "-" + currentPos.Pos.Y, out pos) && currentPos.CurrentHeatLoss + pos.HeatLoss < minHeatLoss)
                     {
                         string key = pos.X + " " + pos.Y + " " + 0 + " " + currentPos.West + 1 + " " + 0 + " " + 0;
                         if (!tested.Contains(key))
@@ -2389,8 +2391,8 @@ namespace AdventCalendar2023
                 }
                 if (currentPos.North < maxMoveDistance && currentPos.South == 0 && ((currentPos.East + currentPos.West) >= minMoveDistance || currentPos.North > 0))
                 {
-                    Day17Position pos = grid.FirstOrDefault(w => w.X == currentPos.Pos.X && w.Y == currentPos.Pos.Y - 1 && currentPos.CurrentHeatLoss + w.HeatLoss < minHeatLoss);
-                    if (pos != null)
+                    Day17Position pos;
+                    if (grid.TryGetValue(currentPos.Pos.X + "-" + (currentPos.Pos.Y - 1), out pos) && currentPos.CurrentHeatLoss + pos.HeatLoss < minHeatLoss)
                     {
                         string key = pos.X + " " + pos.Y + " " + 0 + " " + 0 + " " + currentPos.North + 1 + " " + 0;
                         if (!tested.Contains(key))
@@ -2403,8 +2405,8 @@ namespace AdventCalendar2023
                 }
                 if (currentPos.South < maxMoveDistance && currentPos.North == 0 && ((currentPos.East + currentPos.West) >= minMoveDistance || currentPos.South > 0 || (currentPos.Pos.X + currentPos.Pos.Y) == 0))
                 {
-                    Day17Position pos = grid.FirstOrDefault(w => w.X == currentPos.Pos.X && w.Y == currentPos.Pos.Y + 1 && currentPos.CurrentHeatLoss + w.HeatLoss < minHeatLoss);
-                    if (pos != null)
+                    Day17Position pos;
+                    if (grid.TryGetValue(currentPos.Pos.X + "-" + (currentPos.Pos.Y + 1), out pos) && currentPos.CurrentHeatLoss + pos.HeatLoss < minHeatLoss)
                     {
                         string key = pos.X + " " + pos.Y + " " + 0 + " " + 0 + " " + 0 + " " + currentPos.South + 1;
                         if (!tested.Contains(key))
