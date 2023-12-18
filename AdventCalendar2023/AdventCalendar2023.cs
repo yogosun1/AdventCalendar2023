@@ -2435,5 +2435,271 @@ namespace AdventCalendar2023
             public int CurrentHeatLoss { get; set; }
             public int Priority { get; set; }
         }
+
+        [TestMethod]
+        public void Day18_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day18.txt").ToList();
+            List<Day18Instruction> instructionList = new List<Day18Instruction>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split(' ').ToList();
+                instructionList.Add(new Day18Instruction { Direction = inputSplit.First(), Length = int.Parse(inputSplit[1]) });
+            }
+            List<Day18Position> grid = new List<Day18Position>();
+            int x = 0, y = 0, index = 0;
+            foreach (Day18Instruction instruction in instructionList)
+            {
+                if (instruction.Direction == "R")
+                    for (int i = 1; i <= instruction.Length; i++)
+                        grid.Add(new Day18Position { X = x++, Y = y, IsEdge = true, Index = index++ });
+                else if (instruction.Direction == "L")
+                    for (int i = 1; i <= instruction.Length; i++)
+                        grid.Add(new Day18Position { X = x--, Y = y, IsEdge = true, Index = index++ });
+                else if (instruction.Direction == "U")
+                    for (int i = 1; i <= instruction.Length; i++)
+                        grid.Add(new Day18Position { X = x, Y = y--, IsEdge = true, Index = index++ });
+                else if (instruction.Direction == "D")
+                    for (int i = 1; i <= instruction.Length; i++)
+                        grid.Add(new Day18Position { X = x, Y = y++, IsEdge = true, Index = index++ });
+            }
+            Day18FillPool(grid, "west", "north"); // actual data
+            //Day18FillPool(grid, "east", "south"); // sample data
+            Debug.WriteLine(grid.Count());
+        }
+
+        [TestMethod]
+        public void Day18_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day18.txt").ToList();
+            List<Day18Instruction> instructionList = new List<Day18Instruction>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split(' ').ToList();
+                instructionList.Add(new Day18Instruction
+                {
+                    Direction = inputSplit[2][7] == '0' ? "R" : inputSplit[2][7] == '1' ? "D" : inputSplit[2][7] == '2' ? "L" : "U",
+                    Length = Convert.ToInt32(inputSplit[2].Substring(2, 5), 16)
+                });
+            }
+            List<Day18PositionLine> grid = new List<Day18PositionLine>();
+            int x = 0, y = 0, currentDirection = 2, currentFillDirection = 3; // adjust these depending on input data starting position
+            foreach (Day18Instruction instruction in instructionList)
+            {
+                if (instruction.Direction == "R")
+                {
+                    currentFillDirection = Day18CalcFillDirection(currentDirection, 2, currentFillDirection);
+                    currentDirection = 2;
+                    grid.Add(new Day18PositionLine { StartX = x, StartY = y, EndX = x + instruction.Length, EndY = y, Length = instruction.Length, IsHorizontal = true, FillDirection = currentFillDirection });
+                    x += instruction.Length;
+                }
+                else if (instruction.Direction == "L")
+                {
+                    currentFillDirection = Day18CalcFillDirection(currentDirection, 0, currentFillDirection);
+                    currentDirection = 0;
+                    grid.Add(new Day18PositionLine { StartX = x - instruction.Length, StartY = y, EndX = x, EndY = y, Length = instruction.Length, IsHorizontal = true, FillDirection = currentFillDirection });
+                    x -= instruction.Length;
+                }
+                else if (instruction.Direction == "U")
+                {
+                    currentFillDirection = Day18CalcFillDirection(currentDirection, 1, currentFillDirection);
+                    currentDirection = 1;
+                    grid.Add(new Day18PositionLine { StartX = x, StartY = y - instruction.Length, EndX = x, EndY = y, Length = instruction.Length, IsHorizontal = false, FillDirection = currentFillDirection });
+                    y -= instruction.Length;
+                }
+                else if (instruction.Direction == "D")
+                {
+                    currentFillDirection = Day18CalcFillDirection(currentDirection, 3, currentFillDirection);
+                    currentDirection = 3;
+                    grid.Add(new Day18PositionLine { StartX = x, StartY = y, EndX = x, EndY = y + instruction.Length, Length = instruction.Length, IsHorizontal = false, FillDirection = currentFillDirection });
+                    y += instruction.Length;
+                }
+            }
+            long fillSum = Day18CalcFill(grid);
+            Debug.WriteLine(fillSum);
+        }
+
+        private void Day18FillPool(List<Day18Position> grid, string startMoveDirection, string startFillDirection)
+        {
+            List<string> directionList = new List<string> { "west", "north", "east", "south" };
+            HashSet<string> fillList = new HashSet<string>();
+            Day18Position edge1 = grid.First(w => w.Index == 0);
+            int fillDirection = directionList.IndexOf(startFillDirection);
+            int moveDirection = directionList.IndexOf(startMoveDirection);
+            int oldX, oldY;
+            while (edge1 != null)
+            {
+                Day18FillLine(grid, edge1, fillDirection, fillList);
+                oldX = edge1.X;
+                oldY = edge1.Y;
+                edge1 = grid.FirstOrDefault(w => w.Index == edge1.Index + 1);
+                if (edge1 != null)
+                {
+                    int newMoveDirection = directionList.IndexOf(edge1.X > oldX ? "east" : edge1.X < oldX ? "west" : edge1.Y > oldY ? "south" : "north");
+                    fillDirection = Day18CalcFillDirection(moveDirection, newMoveDirection, fillDirection);
+                    if (moveDirection != newMoveDirection)
+                        Day18FillLine(grid, grid.First(w => w.Index == edge1.Index - 1), fillDirection, fillList);
+                    moveDirection = newMoveDirection;
+                }
+            }
+        }
+
+        private void Day18FillLine(List<Day18Position> grid, Day18Position edge1, int fillDirection, HashSet<string> fillList)
+        {
+            Day18Position edge2 = null;
+            if (fillDirection == 2) // east
+            {
+                edge2 = grid.Where(w => w.X > edge1.X && w.Y == edge1.Y && w.IsEdge).OrderBy(o => o.X).FirstOrDefault();
+                for (int i = edge1.X + 1; i < edge2.X; i++)
+                    if (!fillList.Contains(i + "-" + edge1.Y))
+                    {
+                        grid.Add(new Day18Position { X = i, Y = edge1.Y, IsEdge = false });
+                        fillList.Add(i + "-" + edge1.Y);
+                    }
+            }
+            else if (fillDirection == 0) // west
+            {
+                edge2 = grid.Where(w => w.X < edge1.X && w.Y == edge1.Y && w.IsEdge).OrderByDescending(o => o.X).FirstOrDefault();
+                for (int i = edge1.X - 1; i > edge2.X; i--)
+                    if (!fillList.Contains(i + "-" + edge1.Y))
+                    {
+                        grid.Add(new Day18Position { X = i, Y = edge1.Y, IsEdge = false });
+                        fillList.Add(i + "-" + edge1.Y);
+                    }
+            }
+            else if (fillDirection == 1) // north
+            {
+                edge2 = grid.Where(w => w.X == edge1.X && w.Y < edge1.Y && w.IsEdge).OrderByDescending(o => o.Y).FirstOrDefault();
+                for (int i = edge1.Y - 1; i > edge2.Y; i--)
+                    if (!fillList.Contains(edge1.X + "-" + i))
+                    {
+                        grid.Add(new Day18Position { X = edge1.X, Y = i, IsEdge = false });
+                        fillList.Add(edge1.X + "-" + i);
+                    }
+            }
+            else if (fillDirection == 3) // south
+            {
+                edge2 = grid.Where(w => w.X == edge1.X && w.Y > edge1.Y && w.IsEdge).OrderBy(o => o.Y).FirstOrDefault();
+                for (int i = edge1.Y + 1; i < edge2.Y; i++)
+                    if (!fillList.Contains(edge1.X + "-" + i))
+                    {
+                        grid.Add(new Day18Position { X = edge1.X, Y = i, IsEdge = false });
+                        fillList.Add(edge1.X + "-" + i);
+                    }
+            }
+        }
+
+        private long Day18CalcFill(List<Day18PositionLine> grid)
+        {
+            int minY = grid.Min(m => m.StartY);
+            int maxY = grid.Max(m => m.StartY);
+            Day18PositionLine edge1 = null;
+            Day18PositionLine edge2 = null;
+            long fillSum = 0;
+            long tempFill = 0;
+            for (int y = minY; y <= maxY; y++)
+            {
+                if (y % 100000 == 0)
+                    Debug.WriteLine("Row: " + y + " fillSum: " + fillSum + " minY: " + minY + " maxY: " + maxY);
+                edge1 = grid.Where(w => w.StartY <= y && w.EndY >= y).OrderBy(o => o.StartX).ThenByDescending(t => t.EndX).First();
+                while (edge1 != null)
+                {
+                    if (edge1.IsHorizontal)
+                    {
+                        tempFill = edge1.EndX - edge1.StartX + 1;
+                        if (grid.Any(w => w.EndX == edge1.EndX && w.EndY == edge1.EndY && !w.IsHorizontal))
+                        {
+                            if (edge1.FillDirection == 3)
+                            {
+                                edge1 = grid.Where(w => w.EndX == edge1.EndX && w.EndY == edge1.EndY && !w.IsHorizontal).First();
+                                tempFill--;
+                            }
+                            else
+                                edge1 = grid.Where(w => w.StartY <= y && w.EndY >= y && w.StartX > edge1.EndX).OrderBy(o => o.StartX).ThenByDescending(t => t.EndX).FirstOrDefault();
+                        }
+                        else
+                        {
+                            if (edge1.FillDirection == 1)
+                            {
+                                edge1 = grid.Where(w => w.StartX == edge1.EndX && w.StartY == edge1.EndY && !w.IsHorizontal).First();
+                                tempFill--;
+                            }
+                            else
+                                edge1 = grid.Where(w => w.StartY <= y && w.EndY >= y && w.StartX > edge1.EndX).OrderBy(o => o.StartX).ThenByDescending(t => t.EndX).FirstOrDefault();
+                        }
+                        fillSum += tempFill;
+                    }
+                    else
+                    {
+                        edge2 = grid.Where(w => w.StartY <= y && w.EndY >= y && w.StartX > edge1.StartX).OrderBy(o => o.StartX).ThenByDescending(t => t.EndX).First();
+                        if (edge2.IsHorizontal)
+                        {
+                            fillSum += edge2.StartX - edge1.StartX;
+                            edge1 = edge2;
+                        }
+                        else
+                        {
+                            fillSum += edge2.StartX - edge1.StartX + 1;
+                            edge1 = grid.Where(w => w.StartY <= y && w.EndY >= y && w.StartX > edge2.StartX).OrderBy(o => o.StartX).ThenByDescending(t => t.EndX).FirstOrDefault();
+                        }
+                    }
+                }
+            }
+            return fillSum;
+        }
+
+        private int Day18CalcFillDirection(int currentDirection, int newDirection, int currentFillDirection)
+        {
+            int fillDirection = currentFillDirection;
+            if (currentDirection == 0 && newDirection == 3 || currentDirection == 1 && newDirection == 0
+                || currentDirection == 2 && newDirection == 1 || currentDirection == 3 && newDirection == 2)
+                fillDirection--;
+            else if (currentDirection == 0 && newDirection == 1 || currentDirection == 1 && newDirection == 2
+                || currentDirection == 2 && newDirection == 3 || currentDirection == 3 && newDirection == 0)
+                fillDirection++;
+            fillDirection = (fillDirection < 0 ? 4 + fillDirection : fillDirection) % 4;
+            return fillDirection;
+        }
+
+        private void Day18PrintGrid(List<Day18Position> grid)
+        {
+            for (int y = grid.Min(m => m.Y); y <= grid.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = grid.Min(m => m.X); x <= grid.Max(m => m.X); x++)
+                {
+                    Day18Position pos = grid.FirstOrDefault(w => w.X == x && w.Y == y);
+                    //line += pos != null ? "#" : ".";
+                    line += pos != null ? pos.Index == 0 ? "F" : "#" : ".";
+                    //line += pos != null ? pos.Index.ToString().PadRight(2) : ".".PadRight(2);
+                }
+                Debug.WriteLine(line);
+            }
+        }
+
+        private class Day18Instruction
+        {
+            public string Direction { get; set; }
+            public int Length { get; set; }
+        }
+
+        private class Day18Position
+        {
+            public int Y { get; set; }
+            public int X { get; set; }
+            public int Index { get; set; }
+            public bool IsEdge { get; set; }
+        }
+
+        private class Day18PositionLine
+        {
+            public bool IsHorizontal { get; set; }
+            public int StartY { get; set; }
+            public int StartX { get; set; }
+            public int EndY { get; set; }
+            public int EndX { get; set; }
+            public int Length { get; set; }
+            public int FillDirection { get; set; }
+        }
     }
 }
