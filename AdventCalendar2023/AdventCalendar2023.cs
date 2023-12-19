@@ -2701,5 +2701,249 @@ namespace AdventCalendar2023
             public int Length { get; set; }
             public int FillDirection { get; set; }
         }
+
+        [TestMethod]
+        public void Day19_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day19.txt").ToList();
+            List<Day19Workflow> workflowList = new List<Day19Workflow>();
+            List<Day19Part> partList = new List<Day19Part>();
+            bool worldflowInputComplete = false;
+            foreach (string input in inputList)
+            {
+                if (string.IsNullOrWhiteSpace(input))
+                    worldflowInputComplete = true;
+                else if (!worldflowInputComplete)
+                {
+                    List<string> inputSplit = input.Split('{').ToList();
+                    Day19Workflow worldflow = new Day19Workflow { Name = inputSplit[0], RuleList = inputSplit[1].TrimEnd('}').Split(',').ToList() };
+                    workflowList.Add(worldflow);
+                }
+                else
+                {
+                    List<string> inputSplit = input.TrimStart('{').TrimEnd('}').Split(',').ToList();
+                    Day19Part part = new Day19Part();
+                    inputSplit.ForEach(e => part.RatingList.Add(new Day19PartRating { Name = e[0].ToString(), Value = int.Parse(e.Substring(2)) }));
+                    partList.Add(part);
+                }
+            }
+
+            long sumRating = 0;
+            Day19Workflow currentWorkflow;
+            bool isAccepted;
+            foreach (Day19Part part in partList)
+            {
+                isAccepted = false;
+                currentWorkflow = workflowList.First(w => w.Name == "in");
+                while (currentWorkflow != null)
+                {
+                    foreach (string rule in currentWorkflow.RuleList)
+                    {
+                        if (rule == "R")
+                        {
+                            currentWorkflow = null;
+                            break;
+                        }
+                        else if (rule == "A")
+                        {
+                            currentWorkflow = null;
+                            isAccepted = true;
+                            break;
+                        }
+                        else if (rule.Contains(':'))
+                        {
+                            List<string> ruleSplit = rule.Split(':').ToList();
+                            int value = part.RatingList.First(w => w.Name == ruleSplit[0][0].ToString()).Value;
+                            int compareValue = int.Parse(ruleSplit[0].Substring(2));
+                            if ((ruleSplit[0][1] == '<' && value < compareValue) || (ruleSplit[0][1] == '>' && value > compareValue))
+                            {
+                                if (ruleSplit[1] == "R")
+                                {
+                                    currentWorkflow = null;
+                                    break;
+                                }
+                                else if (ruleSplit[1] == "A")
+                                {
+                                    currentWorkflow = null;
+                                    isAccepted = true;
+                                    break;
+                                }
+                                else
+                                {
+                                    currentWorkflow = workflowList.First(w => w.Name == ruleSplit[1]);
+                                    break;
+                                }
+                            }
+                            else
+                                continue;
+                        }
+                        else
+                        {
+                            currentWorkflow = workflowList.First(w => w.Name == rule);
+                            break;
+                        }
+                    }
+                }
+                if (isAccepted)
+                    sumRating += part.RatingList.Sum(s => s.Value);
+            }
+            Debug.WriteLine(sumRating);
+        }
+
+        [TestMethod]
+        public void Day19_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day19.txt").ToList();
+            List<Day19Workflow> workflowList = new List<Day19Workflow>();
+            foreach (string input in inputList)
+            {
+                if (string.IsNullOrWhiteSpace(input))
+                    break;
+                List<string> inputSplit = input.Split('{').ToList();
+                Day19Workflow worldflow = new Day19Workflow { Name = inputSplit[0], RuleList = inputSplit[1].TrimEnd('}').Split(',').ToList() };
+                workflowList.Add(worldflow);
+            }
+            List<Day19RatingRange> ratingRangeList = new List<Day19RatingRange>
+            {
+                new Day19RatingRange{ Name = "x", Min = 1, Max = 4000 },
+                new Day19RatingRange{ Name = "m", Min = 1, Max = 4000 },
+                new Day19RatingRange{ Name = "a", Min = 1, Max = 4000 },
+                new Day19RatingRange{ Name = "s", Min = 1, Max = 4000 },
+            };
+            long combinaitons = Day19CalculateCombinations(workflowList, workflowList.First(w => w.Name == "in"), ratingRangeList, string.Empty);
+            Debug.WriteLine(combinaitons);
+        }
+
+        private long Day19CalculateCombinations(List<Day19Workflow> workflowList, Day19Workflow currentWorkflow, List<Day19RatingRange> ratingRangeList, string currentRule)
+        {
+            int startRuleIndex = 0;
+            bool isAccepted = false;
+            if (!string.IsNullOrEmpty(currentRule))
+                startRuleIndex = currentWorkflow.RuleList.IndexOf(currentRule);
+            long combinations = 0;
+            while (currentWorkflow != null)
+            {
+                for (int i = startRuleIndex; i < currentWorkflow.RuleList.Count; i++)
+                {
+                    string rule = currentWorkflow.RuleList[i];
+                    if (rule == "R")
+                    {
+                        currentWorkflow = null;
+                        break;
+                    }
+                    else if (rule == "A")
+                    {
+                        currentWorkflow = null;
+                        isAccepted = true;
+                        break;
+                    }
+                    else if (rule.Contains(':'))
+                    {
+                        List<string> ruleSplit = rule.Split(':').ToList();
+                        Day19RatingRange rating = ratingRangeList.First(w => w.Name == ruleSplit[0][0].ToString());
+                        long compareValue = long.Parse(ruleSplit[0].Substring(2));
+                        Debug.WriteLine("Flow: " + currentWorkflow.Name + " Rule: " + rule + " Range: " + string.Join(',', ratingRangeList.Select(s => s.Name + s.Min + "-" + s.Max)));
+                        if (ruleSplit[0][1] == '<' && rating.Min < compareValue)
+                        {
+                            if (rating.Max > compareValue)
+                            {
+                                List<Day19RatingRange> newRatingList = new List<Day19RatingRange>();
+                                foreach (Day19RatingRange r in ratingRangeList)
+                                {
+                                    long minValue = r.Name == ruleSplit[0][0].ToString() ? compareValue : r.Min;
+                                    newRatingList.Add(new Day19RatingRange { Min = minValue, Max = r.Max, Name = r.Name });
+                                }
+                                combinations += Day19CalculateCombinations(workflowList, currentWorkflow, newRatingList, currentWorkflow.RuleList[i + 1]);
+                            }
+                            rating.Max = Math.Min(compareValue - 1, rating.Max);
+                            if (ruleSplit[1] == "R")
+                            {
+                                currentWorkflow = null;
+                                break;
+                            }
+                            else if (ruleSplit[1] == "A")
+                            {
+                                currentWorkflow = null;
+                                isAccepted = true;
+                                break;
+                            }
+                            else
+                            {
+                                currentWorkflow = workflowList.First(w => w.Name == ruleSplit[1]);
+                                startRuleIndex = 0;
+                                break;
+                            }
+                        }
+                        else if (ruleSplit[0][1] == '>' && rating.Max > compareValue)
+                        {
+                            if (rating.Min < compareValue)
+                            {
+                                List<Day19RatingRange> newRatingList = new List<Day19RatingRange>();
+                                foreach (Day19RatingRange r in ratingRangeList)
+                                {
+                                    long maxValue = r.Name == ruleSplit[0][0].ToString() ? compareValue : r.Max;
+                                    newRatingList.Add(new Day19RatingRange { Min = r.Min, Max = maxValue, Name = r.Name });
+                                }
+                                combinations += Day19CalculateCombinations(workflowList, currentWorkflow, newRatingList, currentWorkflow.RuleList[i + 1]);
+                            }
+                            rating.Min = Math.Max(compareValue + 1, rating.Min);
+                            if (ruleSplit[1] == "R")
+                            {
+                                currentWorkflow = null;
+                                break;
+                            }
+                            else if (ruleSplit[1] == "A")
+                            {
+                                currentWorkflow = null;
+                                isAccepted = true;
+                                break;
+                            }
+                            else
+                            {
+                                currentWorkflow = workflowList.First(w => w.Name == ruleSplit[1]);
+                                startRuleIndex = 0;
+                                break;
+                            }
+                        }
+                        else
+                            continue;
+                    }
+                    else
+                    {
+                        currentWorkflow = workflowList.First(w => w.Name == rule);
+                        startRuleIndex = 0;
+                        break;
+                    }
+                }
+            }
+            if (isAccepted)
+                return combinations + ratingRangeList.Select(s => s.Max - s.Min + 1).Aggregate((long)1, (a, b) => a * b);
+            else
+                return combinations;
+        }
+
+        private class Day19Workflow
+        {
+            public string Name { get; set; }
+            public List<string> RuleList = new List<string>();
+        }
+
+        private class Day19Part
+        {
+            public List<Day19PartRating> RatingList = new List<Day19PartRating>();
+        }
+
+        private class Day19PartRating
+        {
+            public string Name { get; set; }
+            public int Value { get; set; }
+        }
+
+        private class Day19RatingRange
+        {
+            public string Name { get; set; }
+            public long Min { get; set; }
+            public long Max { get; set; }
+        }
     }
 }

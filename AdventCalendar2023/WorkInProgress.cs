@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -12,19 +13,13 @@ using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AdventCalendar2023
 {
     [TestClass]
     public class WorkInProgress
     {
-
-        [TestMethod]
-        public void Day19()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day19.txt").ToList();
-        }
-
         [TestMethod]
         public void Day20()
         {
