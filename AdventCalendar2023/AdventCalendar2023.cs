@@ -2945,5 +2945,202 @@ namespace AdventCalendar2023
             public long Min { get; set; }
             public long Max { get; set; }
         }
+
+        [TestMethod]
+        public void Day20_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day20.txt").ToList();
+            List<Day20Module> moduleList = new List<Day20Module>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split('-').ToList();
+                moduleList.Add(new Day20Module
+                {
+                    Type = inputSplit[0][0],
+                    Name = inputSplit[0][0] == 'b' ? inputSplit[0].TrimEnd() : inputSplit[0].Substring(1).TrimEnd(),
+                    DestinationList = inputSplit[1].Substring(2).Split(',').Select(s => s.Trim()).ToList(),
+                    IsOn = false,
+                });
+            }
+            foreach (Day20Module module in moduleList.Where(w => w.Type == '&'))
+                module.SignalList = moduleList.Where(w => w.DestinationList.Contains(module.Name)).ToList()
+                   .Select(s => new Day20ConjunctionSignal { Name = s.Name, Signal = 1 }).ToList();
+            long lowSignals = 0, highSignals = 0;
+            for (int i = 0; i < 1000; i++)
+            {
+                Tuple<long, long> signalResult = Day20CalcSignals(moduleList);
+                lowSignals += signalResult.Item1;
+                highSignals += signalResult.Item2;
+            }
+            Debug.WriteLine(lowSignals * highSignals);
+        }
+
+        private Tuple<long, long> Day20CalcSignals(List<Day20Module> moduleList)
+        {
+            long lowSignalCount = 1;
+            long highSignalCount = 0;
+            int prio = 0;
+            PriorityQueue<Day20QueueItem, int> queue = new PriorityQueue<Day20QueueItem, int>();
+            Day20Module broadcast = moduleList.First(w => w.Type == 'b');
+            queue.Enqueue(new Day20QueueItem { Module = broadcast, SenderSignal = 1, SenderName = broadcast.Name }, prio);
+            int dummy;
+            Day20QueueItem currentModule;
+            Day20Module module;
+            short newSignal = 1; // 1 = low 2 = high
+            while (queue.TryDequeue(out currentModule, out dummy))
+            {
+                if (currentModule.Module == null)
+                    continue;
+                if (currentModule.Module.Type == '%')
+                {
+                    if (currentModule.SenderSignal == 2)
+                        continue;
+                    else if (currentModule.Module.IsOn)
+                    {
+                        currentModule.Module.IsOn = false;
+                        newSignal = 1;
+                    }
+                    else
+                    {
+                        currentModule.Module.IsOn = true;
+                        newSignal = 2;
+                    }
+                }
+                else if (currentModule.Module.Type == '&')
+                {
+                    Day20ConjunctionSignal signal = currentModule.Module.SignalList.First(w => w.Name == currentModule.SenderName);
+                    signal.Signal = currentModule.SenderSignal;
+                    if (currentModule.Module.SignalList.All(a => a.Signal == 2))
+                        newSignal = 1;
+                    else
+                        newSignal = 2;
+                }
+                else if (currentModule.Module.Type == 'b')
+                    newSignal = currentModule.SenderSignal;
+                prio++;
+                foreach (string moduleName in currentModule.Module.DestinationList)
+                {
+                    if (newSignal == 1)
+                        lowSignalCount++;
+                    else
+                        highSignalCount++;
+                    //Debug.WriteLine(currentModule.Module.Name + " -" + (newSignal == 1 ? "low" : "high") + "-> " + moduleName);
+                    if (moduleName == "rx" && newSignal == 1)
+                        return new Tuple<long, long>(lowSignalCount, highSignalCount);
+                    module = moduleList.FirstOrDefault(w => w.Name == moduleName);
+                    if (module == null)
+                        continue;
+                    queue.Enqueue(new Day20QueueItem { Module = moduleList.First(w => w.Name == moduleName), SenderSignal = newSignal, SenderName = currentModule.Module.Name }, prio);
+                }
+            }
+            return new Tuple<long, long>(lowSignalCount, highSignalCount);
+        }
+
+        [TestMethod]
+        public void Day20_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day20.txt").ToList();
+            List<Day20Module> moduleList = new List<Day20Module>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split('-').ToList();
+                moduleList.Add(new Day20Module
+                {
+                    Type = inputSplit[0][0],
+                    Name = inputSplit[0][0] == 'b' ? inputSplit[0].TrimEnd() : inputSplit[0].Substring(1).TrimEnd(),
+                    DestinationList = inputSplit[1].Substring(2).Split(',').Select(s => s.Trim()).ToList(),
+                    IsOn = false,
+                });
+            }
+            foreach (Day20Module module in moduleList.Where(w => w.Type == '&'))
+                module.SignalList = moduleList.Where(w => w.DestinationList.Contains(module.Name)).ToList()
+                   .Select(s => new Day20ConjunctionSignal { Name = s.Name, Signal = 1 }).ToList();
+            long result = Day20CalcSignals2(moduleList);
+            Debug.WriteLine(result);
+        }
+
+        private long Day20CalcSignals2(List<Day20Module> moduleList)
+        {
+            string rxSender = moduleList.First(w => w.DestinationList.Any(a => a == "rx")).Name;
+            List<string> rxSendersSenders = moduleList.Where(w => w.DestinationList.Any(a => a == rxSender)).Select(s => s.Name).ToList();
+            long[] senderPresses = new long[rxSendersSenders.Count];
+            long presses = 0;
+            while (true)
+            {
+                if (senderPresses.All(a => a > 0))
+                    break;
+                presses++;
+                int prio = 0;
+                PriorityQueue<Day20QueueItem, int> queue = new PriorityQueue<Day20QueueItem, int>();
+                Day20Module broadcast = moduleList.First(w => w.Type == 'b');
+                queue.Enqueue(new Day20QueueItem { Module = broadcast, SenderSignal = 1, SenderName = broadcast.Name }, prio);
+                int dummy;
+                Day20QueueItem currentModule;
+                Day20Module module;
+                short newSignal = 1; // 1 = low 2 = high
+                while (queue.TryDequeue(out currentModule, out dummy))
+                {
+                    if (currentModule.Module == null)
+                        continue;
+                    if (currentModule.Module.Type == '%')
+                    {
+                        if (currentModule.SenderSignal == 2)
+                            continue;
+                        else if (currentModule.Module.IsOn)
+                        {
+                            currentModule.Module.IsOn = false;
+                            newSignal = 1;
+                        }
+                        else
+                        {
+                            currentModule.Module.IsOn = true;
+                            newSignal = 2;
+                        }
+                    }
+                    else if (currentModule.Module.Type == '&')
+                    {
+                        Day20ConjunctionSignal signal = currentModule.Module.SignalList.First(w => w.Name == currentModule.SenderName);
+                        signal.Signal = currentModule.SenderSignal;
+                        newSignal = currentModule.Module.SignalList.All(a => a.Signal == 2) ? (short)1 : (short)2;
+                    }
+                    else if (currentModule.Module.Type == 'b')
+                        newSignal = currentModule.SenderSignal;
+                    prio++;
+                    foreach (string moduleName in currentModule.Module.DestinationList)
+                    {
+                        if (moduleName == rxSender && newSignal == 2)
+                            if (senderPresses[rxSendersSenders.IndexOf(currentModule.Module.Name)] == 0)
+                                senderPresses[rxSendersSenders.IndexOf(currentModule.Module.Name)] = presses;
+                        module = moduleList.FirstOrDefault(w => w.Name == moduleName);
+                        if (module == null)
+                            continue;
+                        queue.Enqueue(new Day20QueueItem { Module = moduleList.First(w => w.Name == moduleName), SenderSignal = newSignal, SenderName = currentModule.Module.Name }, prio);
+                    }
+                }
+            }
+            return MathHelpers.LeastCommonMultiple(senderPresses);
+        }
+
+        private class Day20QueueItem
+        {
+            public string SenderName { get; set; }
+            public short SenderSignal { get; set; }
+            public Day20Module Module { get; set; }
+        }
+
+        private class Day20Module
+        {
+            public string Name { get; set; }
+            public char Type { get; set; }
+            public bool IsOn { get; set; }
+            public List<Day20ConjunctionSignal> SignalList = new List<Day20ConjunctionSignal>();
+            public List<string> DestinationList { get; set; }
+        }
+
+        private class Day20ConjunctionSignal
+        {
+            public string Name { get; set; }
+            public short Signal { get; set; }
+        }
     }
 }
