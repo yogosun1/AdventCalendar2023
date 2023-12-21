@@ -242,6 +242,14 @@ namespace AdventCalendar2023
                     Debug.WriteLine("Edge plots: " + (currentPositions.Count() - plots));
                     Debug.WriteLine("Edge plotList: " + string.Join(',', edgePlots));
 
+                    // Edge plotList: 
+                    // continue calculating edge plotlist. This should be possible with baseValue + (i%11)*addValue
+                    //437,491,533,586,639,696,737,
+                    //455,534,573,627,662,737,790,864,930,1009,1060,
+                    //630,733,782,851,891,986,1049,1143,1221,1322,1383,
+                    //805,932,991,1075,1120,1235,1308,1422,1512,1635,1706,
+                    //980,1131
+
 
                     //}
                 }
