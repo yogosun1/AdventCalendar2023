@@ -3142,5 +3142,164 @@ namespace AdventCalendar2023
             public string Name { get; set; }
             public short Signal { get; set; }
         }
+
+        [TestMethod]
+        public void Day22_1()
+        {
+            List<Day22Brick> bricks = Day22ParseInput(File.ReadAllLines(@"Input\Day22.txt").ToList());
+            Day22CompressPillar(bricks);
+            List<int> disintegrationList = new List<int>();
+            foreach (Day22Brick brick in bricks)
+                if (bricks.Where(w => brick.Supporting.Contains(w.BrickNr)).All(a => a.SupportedBy.Count() > 1) || brick.Supporting.Count == 0)
+                    if (!disintegrationList.Contains(brick.BrickNr))
+                        disintegrationList.Add(brick.BrickNr);
+            Debug.WriteLine(disintegrationList.Count());
+        }
+
+        [TestMethod]
+        public void Day22_2()
+        {
+            List<Day22Brick> bricks = Day22ParseInput(File.ReadAllLines(@"Input\Day22.txt").ToList());
+            Day22CompressPillar(bricks);
+            foreach (Day22Brick brick in bricks.OrderBy(o => o.StartZ))
+            {
+                bricks.ForEach(e => e.IsDestroyed = false);
+                brick.IsDestroyed = true;
+                for (int z = (brick.StartZ + 1); z <= bricks.Max(m => m.EndZ); z++)
+                {
+                    List<Day22Brick> floor = bricks.Where(w => w.StartZ == z).ToList();
+                    List<Day22Brick> previousFloor = bricks.Where(w => w.EndZ == (z - 1)).ToList();
+                    foreach (Day22Brick floorBrick in floor)
+                        if (previousFloor.Where(w => floorBrick.SupportedBy.Contains(w.BrickNr) && !w.IsDestroyed).Count() == 0)
+                            floorBrick.IsDestroyed = true;
+                }
+                brick.DisintegrationFalls = bricks.Count(c => c.IsDestroyed) - 1;
+            }
+            Debug.WriteLine(bricks.Sum(s => s.DisintegrationFalls));
+        }
+
+        private void Day22CompressPillar(List<Day22Brick> bricks)
+        {
+            foreach (Day22Brick brick in bricks.OrderBy(o => o.StartZ))
+            {
+                while (true)
+                {
+                    List<int> supporters = Day22FindSupporters(bricks, brick);
+                    if (supporters.Count > 0 || brick.StartZ == 1)
+                    {
+                        brick.SupportedBy = supporters;
+                        foreach (Day22Brick supportBrick in bricks.Where(w => supporters.Contains(w.BrickNr)))
+                            if (!supportBrick.Supporting.Contains(brick.BrickNr))
+                                supportBrick.Supporting.Add(brick.BrickNr);
+                        break;
+                    }
+                    else
+                    {
+                        brick.StartZ--;
+                        brick.EndZ--;
+                        brick.CubeList.ForEach(e => e.Z--);
+                    }
+                }
+            }
+        }
+
+        private List<Day22Brick> Day22ParseInput(List<string> inputList)
+        {
+            List<Day22Brick> bricks = new List<Day22Brick>();
+            int brickNr = 1;
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split('~').ToList();
+                List<int> startSplit = inputSplit[0].Split(',').Select(int.Parse).ToList();
+                List<int> endSplit = inputSplit[1].Split(',').Select(int.Parse).ToList();
+                Day22Brick brick = new Day22Brick
+                {
+                    BrickNr = brickNr,
+                    StartX = Math.Min(startSplit[0], endSplit[0]),
+                    StartY = Math.Min(startSplit[1], endSplit[1]),
+                    StartZ = Math.Min(startSplit[2], endSplit[2]),
+                    EndX = Math.Max(startSplit[0], endSplit[0]),
+                    EndY = Math.Max(startSplit[1], endSplit[1]),
+                    EndZ = Math.Max(startSplit[2], endSplit[2])
+                };
+                if (startSplit[0] == endSplit[0] && startSplit[1] == endSplit[1] && startSplit[2] == endSplit[2])
+                    brick.CubeList.Add(new Day22Cube { X = startSplit[0], Y = startSplit[1], Z = startSplit[2] });
+                else if (startSplit[0] != endSplit[0])
+                    for (int i = Math.Min(startSplit[0], endSplit[0]); i <= Math.Max(startSplit[0], endSplit[0]); i++)
+                        brick.CubeList.Add(new Day22Cube { X = i, Y = startSplit[1], Z = startSplit[2] });
+                else if (startSplit[1] != endSplit[1])
+                    for (int i = Math.Min(startSplit[1], endSplit[1]); i <= Math.Max(startSplit[1], endSplit[1]); i++)
+                        brick.CubeList.Add(new Day22Cube { X = startSplit[0], Y = i, Z = startSplit[2] });
+                else if (startSplit[2] != endSplit[2])
+                    for (int i = Math.Min(startSplit[2], endSplit[2]); i <= Math.Max(startSplit[2], endSplit[2]); i++)
+                        brick.CubeList.Add(new Day22Cube { X = startSplit[0], Y = startSplit[1], Z = i });
+                bricks.Add(brick);
+                brickNr++;
+            }
+            return bricks;
+        }
+
+        private void Day22Print(List<Day22Brick> bricks, int maxZ)
+        {
+            for (int z = Math.Min(bricks.Max(m => m.EndZ), maxZ); z > 0; z--)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= bricks.Max(m => m.EndX); x++)
+                {
+                    Day22Brick brick = bricks.FirstOrDefault(w => w.CubeList.Any(a => a.Z == z && a.X == x));
+                    if (brick != null)
+                        line += Convert.ToChar(65 + (brick.BrickNr % 25));
+                    else
+                        line += ".";
+                }
+                line += "     ";
+                for (int y = 0; y <= bricks.Max(m => m.EndY); y++)
+                {
+                    Day22Brick brick = bricks.FirstOrDefault(w => w.CubeList.Any(a => a.Z == z && a.Y == y));
+                    if (brick != null)
+                        line += Convert.ToChar(65 + (brick.BrickNr % 25));
+                    else
+                        line += ".";
+                }
+                Debug.WriteLine(line);
+            }
+        }
+
+        private List<int> Day22FindSupporters(List<Day22Brick> bricks, Day22Brick brick)
+        {
+            List<int> supporters = new List<int>();
+            List<Day22Cube> bottomCubes = brick.CubeList.Where(w => w.Z == brick.StartZ).ToList();
+            List<Day22Brick> potentialSupporters = bricks.Where(w => w.EndZ == (brick.StartZ - 1)).ToList();
+            foreach (Day22Cube cube in bottomCubes)
+            {
+                Day22Brick supporter = potentialSupporters.FirstOrDefault(w => w.CubeList.Any(c => c.Z == w.EndZ && cube.X == c.X && cube.Y == c.Y));
+                if (supporter != null && !supporters.Contains(supporter.BrickNr))
+                    supporters.Add(supporter.BrickNr);
+            }
+            return supporters;
+        }
+
+        private class Day22Brick
+        {
+            public int BrickNr { get; set; }
+            public int StartX { get; set; }
+            public int StartY { get; set; }
+            public int StartZ { get; set; }
+            public int EndX { get; set; }
+            public int EndY { get; set; }
+            public int EndZ { get; set; }
+            public int DisintegrationFalls { get; set; }
+            public bool IsDestroyed { get; set; }
+            public List<int> SupportedBy = new List<int>();
+            public List<int> Supporting = new List<int>();
+            public List<Day22Cube> CubeList = new List<Day22Cube>();
+        }
+
+        private class Day22Cube
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int Z { get; set; }
+        }
     }
 }
