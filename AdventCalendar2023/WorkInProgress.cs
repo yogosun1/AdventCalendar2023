@@ -3,11 +3,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
@@ -17,12 +19,6 @@ namespace AdventCalendar2023
     [TestClass]
     public class WorkInProgress
     {
-        [TestMethod]
-        public void Day23()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day23.txt").ToList();
-        }
-
         [TestMethod]
         public void Day24()
         {

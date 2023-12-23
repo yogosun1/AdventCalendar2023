@@ -3504,5 +3504,196 @@ namespace AdventCalendar2023
             public int Y { get; set; }
             public int Z { get; set; }
         }
+
+        [TestMethod]
+        public void Day23_1()
+        {
+            List<Day23Position> forest = Day23ParseForest(File.ReadAllLines(@"Input\Day23.txt").ToList());
+            Day23FindLongestPathPart1(forest, forest.First(w => w.X == 1 && w.Y == 0), new HashSet<string>(), "south");
+            Debug.WriteLine(_longestPath);
+        }
+
+        int _longestPath = 0;
+        private void Day23FindLongestPathPart1(List<Day23Position> forest, Day23Position currentPos, HashSet<string> visited, string currentDirection)
+        {
+            int maxY = forest.Max(m => m.Y);
+            int maxX = forest.Max(m => m.Y);
+            int endX = maxX - 1;
+            int endY = maxY;
+            while (currentPos != null)
+            {
+                visited.Add(currentPos.X + "-" + currentPos.Y);
+                if (currentPos.X == endX && currentPos.Y == endY)
+                {
+                    if (_longestPath < (visited.Count() - 1))
+                        _longestPath = (visited.Count() - 1);
+                    break;
+                }
+                List<Day23Position> nextPathList = forest.Where(w => (Math.Abs(w.X - currentPos.X) + Math.Abs(w.Y - currentPos.Y)) == 1 && !visited.Contains(w.X + "-" + w.Y)).ToList();
+                foreach (Day23Position nextPath in nextPathList.Where(w => w.Type != '.').ToArray())
+                {
+                    string newDirection = (currentPos.X - nextPath.X) < 0 ? "east" : (currentPos.X - nextPath.X) > 0 ? "west" : (currentPos.Y - nextPath.Y) < 0 ? "south" : "north";
+                    if (newDirection == "east" && nextPath.Type != '>')
+                        nextPathList.Remove(nextPath);
+                    else if (newDirection == "west" && nextPath.Type != '<')
+                        nextPathList.Remove(nextPath);
+                    else if (newDirection == "south" && nextPath.Type != 'v')
+                        nextPathList.Remove(nextPath);
+                    else if (newDirection == "north")
+                        nextPathList.Remove(nextPath);
+                }
+                bool isFirstPath = true;
+                if (nextPathList.Count() == 0)
+                    return;
+                foreach (Day23Position nextPath in nextPathList)
+                {
+                    currentDirection = (currentPos.X - nextPath.X) < 0 ? "east" : (currentPos.X - nextPath.X) > 0 ? "west" : (currentPos.Y - nextPath.Y) < 0 ? "south" : "north";
+                    if (isFirstPath)
+                    {
+                        currentPos = nextPath;
+                        isFirstPath = false;
+                    }
+                    else
+                    {
+                        HashSet<string> nextPathVisited = new HashSet<string>();
+                        visited.ToList().ForEach(e => nextPathVisited.Add(e));
+                        Day23FindLongestPathPart1(forest, nextPath, nextPathVisited, currentDirection);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Day23_2()
+        {
+            List<Day23Position> forest = Day23ParseForest(File.ReadAllLines(@"Input\Day23.txt").ToList());
+            List<Day23Fork> forkList = Day23ParseForks(forest);
+            int path = Day23FindLongestPathPart2(forkList, forkList.First(w => w.IsStart).Name, new HashSet<string>(), 0);
+            Debug.WriteLine(path);
+        }
+
+        private List<Day23Position> Day23ParseForest(List<string> inputList)
+        {
+            List<Day23Position> forest = new List<Day23Position>();
+            int y = 0, x = 0;
+            foreach (string input in inputList)
+            {
+                x = 0;
+                foreach (char c in input)
+                {
+                    if (c != '#')
+                        forest.Add(new Day23Position { Type = c, X = x, Y = y });
+                    x++;
+                }
+                y++;
+            }
+            return forest;
+        }
+
+        private List<Day23Fork> Day23ParseForks(List<Day23Position> forest)
+        {
+            List<Day23Fork> forkList = new List<Day23Fork>();
+            foreach (Day23Position position in forest)
+            {
+                Day23Fork fork = null;
+                bool isFork = false;
+                if (position.Y == 0)
+                    fork = new Day23Fork { IsEnd = false, IsStart = true, Name = position.X + "-" + position.Y };
+                else if (position.Y == forest.Max(m => m.Y))
+                    fork = new Day23Fork { IsEnd = true, IsStart = false, Name = position.X + "-" + position.Y };
+                List<Day23Position> pathList = forest.Where(w => (Math.Abs(w.X - position.X) + Math.Abs(w.Y - position.Y)) == 1).ToList();
+                if (pathList.Count() > 2)
+                    fork = new Day23Fork { IsEnd = false, IsStart = false, Name = position.X + "-" + position.Y };
+                if (fork != null)
+                {
+                    foreach (Day23Position pos in pathList)
+                    {
+                        int length = 0;
+                        Day23Position nextPos = pos;
+                        HashSet<string> visited = new HashSet<string>();
+                        visited.Add(position.X + "-" + position.Y);
+                        while (true)
+                        {
+                            visited.Add(nextPos.X + "-" + nextPos.Y);
+                            length++;
+                            List<Day23Position> nextPosList = forest.Where(w => (Math.Abs(w.X - nextPos.X) + Math.Abs(w.Y - nextPos.Y)) == 1 && !visited.Contains(w.X + "-" + w.Y)).ToList();
+                            if (nextPosList.Count() > 1)
+                                break;
+                            nextPos = nextPosList.First();
+                            if (nextPos.Y == 0 || nextPos.Y == forest.Max(m => m.Y))
+                            {
+                                if (nextPos.Y == forest.Max(m => m.Y))
+                                    length++;
+                                break;
+                            }
+                        }
+                        fork.ConnectedForks.Add(new Tuple<string, int>(nextPos.X + "-" + nextPos.Y, length));
+                    }
+                    forkList.Add(fork);
+                }
+            }
+            return forkList;
+        }
+
+        private int Day23FindLongestPathPart2(List<Day23Fork> forkList, string currentForkName, HashSet<string> visited, int length)
+        {
+            Day23Fork currentFork = forkList.First(w => w.Name == currentForkName);
+            string endName = forkList.First(w => w.IsEnd).Name;
+            visited.Add(currentFork.Name);
+            if (currentFork.Name == endName)
+                return length;
+            List<Tuple<string, int>> nextForks = currentFork.ConnectedForks.Where(w => !visited.Contains(w.Item1)).ToList();
+            if (nextForks.Count() == 0)
+                return -1;
+            List<int> forkLengths = new List<int>();
+            foreach (Tuple<string, int> nextFork in nextForks)
+            {
+                HashSet<string> nextForkVisited = new HashSet<string>();
+                visited.ToList().ForEach(e => nextForkVisited.Add(e));
+                int longestForkLength = Day23FindLongestPathPart2(forkList, nextFork.Item1, nextForkVisited, length + nextFork.Item2);
+                if (longestForkLength == -1)
+                    continue;
+                forkLengths.Add(longestForkLength);
+            }
+            if (forkLengths.Count() == 0)
+                return -1;
+            else
+                return forkLengths.Max();
+        }
+
+        private void Day23Print(List<Day23Position> grid, HashSet<string> visited)
+        {
+
+            for (int y = 0; y <= grid.Max(m => m.Y); y++)
+            {
+                string line = string.Empty;
+                for (int x = 0; x <= grid.Max(m => m.X); x++)
+                {
+                    Day23Position value = grid.FirstOrDefault(w => w.Y == y && w.X == x);
+                    if (value == null)
+                        line += "#";
+                    else if (visited.Contains(value.X + "-" + value.Y))
+                        line += "O";
+                    else
+                        line += value.Type;
+                }
+                Debug.WriteLine(line);
+            }
+        }
+
+        private class Day23Fork
+        {
+            public string Name { get; set; }
+            public bool IsStart { get; set; }
+            public bool IsEnd { get; set; }
+            public List<Tuple<string, int>> ConnectedForks = new List<Tuple<string, int>>();
+        }
+
+        private class Day23Position
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public char Type { get; set; }
+        }
     }
 }
