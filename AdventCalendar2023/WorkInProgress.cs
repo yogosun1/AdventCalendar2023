@@ -1,18 +1,4 @@
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.ObjectModel;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.ComponentModel;
-using System.ComponentModel.Design;
-using System.Data;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.NetworkInformation;
-using System.Numerics;
-using System.Reflection.Metadata;
-using System.Runtime.ExceptionServices;
 
 namespace AdventCalendar2023
 {
@@ -22,7 +8,7 @@ namespace AdventCalendar2023
         [TestMethod]
         public void Day24()
         {
-            List<string> inputList = File.ReadAllLines(@"Input\Day24Test.txt").ToList();
+            List<string> inputList = File.ReadAllLines(@"Input\Day24.txt").ToList();
             List<Day24HailStone> hailstones = new List<Day24HailStone>();
             foreach (string input in inputList)
             {
@@ -38,14 +24,18 @@ namespace AdventCalendar2023
                     Vy = decimal.Parse(rightSideSplit[1].Trim()),
                     Vz = decimal.Parse(rightSideSplit[2].Trim()),
                 };
+                // y = mx + b
+                // 
                 hailstone.Slope = hailstone.Vy / hailstone.Vx;
-                hailstone.YIntercept = hailstone.Slope * (hailstone.X + hailstone.Y);
+                hailstone.YIntercept = hailstone.Y - hailstone.Slope * hailstone.X;
                 hailstones.Add(hailstone);
             }
 
             int intersectCount = 0;
             decimal xyMin = 200000000000000;
             decimal xyMax = 400000000000000;
+            //decimal xyMin = 7;
+            //decimal xyMax = 27;
             Day24HailStone line1, line2;
             for (int h = 0; h < hailstones.Count(); h++)
             {
@@ -53,30 +43,45 @@ namespace AdventCalendar2023
                 for (int i = h + 1; i < hailstones.Count(); i++)
                 {
                     line2 = hailstones[i];
+                    if (line1.Slope == line2.Slope)
+                        continue;
                     decimal x = (line2.YIntercept - line1.YIntercept) / (line1.Slope - line2.Slope);
+                    decimal y = line1.Slope * x + line1.YIntercept;
+                    if (line1.Vx < 0 && x > line1.X || line1.Vx > 0 && x < line1.X)
+                        continue;
+                    if (line1.Vy < 0 && y > line1.Y || line1.Vy > 0 && y < line1.Y)
+                        continue;
+                    if (line2.Vx < 0 && x > line2.X || line2.Vx > 0 && x < line2.X)
+                        continue;
+                    if (line2.Vy < 0 && y > line2.Y || line2.Vy > 0 && y < line2.Y)
+                        continue;
+                    if (xyMin <= x && xyMax >= x && xyMin <= y && xyMax >= y)
+                    {
+                        intersectCount++;
+                        Debug.WriteLine("Line: " + h + " Line: " + i);
+                    }
 
 
-                    decimal A1 = line1.Vy;
-                    decimal B1 = line1.Vx;
-                    decimal C1 = A1 * line1.X + B1 * line1.Y;
 
-                    decimal A2 = line2.Vy;
-                    decimal B2 = line2.Vx;
-                    decimal C2 = A2 * line2.X + B2 * line2.Y;
+                    //decimal A1 = line1.Vy;
+                    //decimal B1 = line1.Vx;
+                    //decimal C1 = A1 * line1.X + B1 * line1.Y;
 
-                    decimal delta = A1 * B2 - A2 * B1;
+                    //decimal A2 = line2.Vy;
+                    //decimal B2 = line2.Vx;
+                    //decimal C2 = A2 * line2.X + B2 * line2.Y;
 
-                    if (delta == 0)
-                        throw new ArgumentException("Lines are parallel");
+                    //decimal delta = A1 * B2 - A2 * B1;
 
-                    decimal xI = (B2 * C1 - B1 * C2) / delta;
-                    decimal yI = (A1 * C2 - A2 * C1) / delta;
+                    //if (delta == 0)
+                    //    throw new ArgumentException("Lines are parallel");
+
+                    //decimal xI = (B2 * C1 - B1 * C2) / delta;
+                    //decimal yI = (A1 * C2 - A2 * C1) / delta;
                 }
             }
-            foreach (Day24HailStone hailstone in hailstones)
-            {
-
-            }
+            Debug.WriteLine(intersectCount);
+            // 15315 low 
         }
 
         private class Day24HailStone
