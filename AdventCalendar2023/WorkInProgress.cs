@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 
 namespace AdventCalendar2023
@@ -24,8 +25,6 @@ namespace AdventCalendar2023
                     Vy = decimal.Parse(rightSideSplit[1].Trim()),
                     Vz = decimal.Parse(rightSideSplit[2].Trim()),
                 };
-                // y = mx + b
-                // 
                 hailstone.Slope = hailstone.Vy / hailstone.Vx;
                 hailstone.YIntercept = hailstone.Y - hailstone.Slope * hailstone.X;
                 hailstones.Add(hailstone);
@@ -60,28 +59,9 @@ namespace AdventCalendar2023
                         intersectCount++;
                         Debug.WriteLine("Line: " + h + " Line: " + i);
                     }
-
-
-
-                    //decimal A1 = line1.Vy;
-                    //decimal B1 = line1.Vx;
-                    //decimal C1 = A1 * line1.X + B1 * line1.Y;
-
-                    //decimal A2 = line2.Vy;
-                    //decimal B2 = line2.Vx;
-                    //decimal C2 = A2 * line2.X + B2 * line2.Y;
-
-                    //decimal delta = A1 * B2 - A2 * B1;
-
-                    //if (delta == 0)
-                    //    throw new ArgumentException("Lines are parallel");
-
-                    //decimal xI = (B2 * C1 - B1 * C2) / delta;
-                    //decimal yI = (A1 * C2 - A2 * C1) / delta;
                 }
             }
             Debug.WriteLine(intersectCount);
-            // 15315 low 
         }
 
         private class Day24HailStone
@@ -94,12 +74,6 @@ namespace AdventCalendar2023
             public decimal Vz { get; set; }
             public decimal Slope { get; set; }
             public decimal YIntercept { get; set; }
-        }
-
-        [TestMethod]
-        public void Day25()
-        {
-            List<string> inputList = File.ReadAllLines(@"Input\Day25.txt").ToList();
         }
     }
 }

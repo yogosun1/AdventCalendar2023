@@ -3695,5 +3695,221 @@ namespace AdventCalendar2023
             public int Y { get; set; }
             public char Type { get; set; }
         }
+
+        [TestMethod]
+        public void Day25()
+        {
+            List<Day25Component> components = Day25ParseInput(File.ReadAllLines(@"Input\Day25.txt").ToList());
+            Dictionary<string, Day25Component> componentsDictionary = new Dictionary<string, Day25Component>();
+            components.ForEach(e => componentsDictionary.Add(e.Nr, e));
+            List<Day25Path> pathList = Day25FindPotentialConnections(componentsDictionary);
+            List<Day25Component> path1Components = components.Where(w => pathList[0].Path.Select(s => s.Split('-')[1]).Contains(w.Nr)).Distinct().ToList();
+            List<Day25Component> path2Components = components.Where(w => pathList[1].Path.Select(s => s.Split('-')[1]).Contains(w.Nr)).Distinct().ToList();
+            List<Day25Component> path3Components = components.Where(w => pathList[2].Path.Select(s => s.Split('-')[1]).Contains(w.Nr)).Distinct().ToList();
+            Day25DivideGroups(path1Components, path2Components, path3Components, components, componentsDictionary);
+            int componentGroup1 = Day25CalculateConnectedComponents(componentsDictionary, components.First());
+            int componentGroup2 = componentGroup1;
+            foreach (Day25Component checkComponent in components.Where(w => w.Nr != components.First().Nr))
+            {
+                componentGroup2 = Day25CalculateConnectedComponents(componentsDictionary, checkComponent);
+                if (componentGroup1 != componentGroup2)
+                    break;
+            }
+            Debug.Write(componentGroup1 * componentGroup2); // 562772
+        }
+
+        private List<Day25Component> Day25ParseInput(List<string> inputList)
+        {
+            List<Day25Component> components = new List<Day25Component>();
+            short nextComponentNr = 0;
+            foreach (string input in inputList)
+            {
+                Day25Component component = components.FirstOrDefault(w => w.Nr == input.Substring(0, 3));
+                if (component == null)
+                {
+                    component = new Day25Component();
+                    component.Nr = input.Substring(0, 3);
+                    components.Add(component);
+                }
+                foreach (string connectionName in input.Split(' ').Skip(1))
+                {
+                    Day25Component connection = components.FirstOrDefault(w => w.Nr == connectionName);
+                    if (connection == null)
+                    {
+                        connection = new Day25Component();
+                        connection.Nr = connectionName;
+                        components.Add(connection);
+                    }
+                    if (!component.Connections.Any(a => a == connection.Nr))
+                        component.Connections.Add(connection.Nr);
+                    if (!connection.Connections.Any(a => a == component.Nr))
+                        connection.Connections.Add(component.Nr);
+                }
+            }
+            return components;
+        }
+
+        private void Day25DivideGroups(List<Day25Component> path1Components, List<Day25Component> path2Components, List<Day25Component> path3Components
+            , List<Day25Component> components, Dictionary<string, Day25Component> componentsDictionary)
+        {
+            bool foundConnections = false;
+            Day25Component startComp = path1Components.First();
+            short componentCount = (short)components.Count();
+            List<string> comp1CheckList = new List<string>();
+            List<string> comp2CheckList = new List<string>();
+            foreach (Day25Component comp1 in path1Components)
+            {
+                comp1CheckList.Add(comp1.Nr);
+                comp2CheckList = new List<string>();
+                foreach (Day25Component comp2 in path2Components.Where(w => !comp1CheckList.Contains(w.Nr)))
+                {
+                    comp2CheckList.Add(comp2.Nr);
+                    foreach (Day25Component comp3 in path3Components.Where(w => !comp1CheckList.Contains(w.Nr) && !comp2CheckList.Contains(w.Nr)))
+                    {
+                        foreach (string con1 in comp1.Connections.ToArray())
+                        {
+                            foreach (string con2 in comp2.Connections.ToArray())
+                            {
+                                foreach (string con3 in comp3.Connections.ToArray())
+                                {
+                                    Day25Component con1Comp = componentsDictionary.GetValueOrDefault(con1);
+                                    Day25Component con2Comp = componentsDictionary.GetValueOrDefault(con2);
+                                    Day25Component con3Comp = componentsDictionary.GetValueOrDefault(con3);
+                                    comp1.Connections.Remove(con1);
+                                    comp2.Connections.Remove(con2);
+                                    comp3.Connections.Remove(con3);
+                                    con1Comp.Connections.Remove(comp1.Nr);
+                                    con2Comp.Connections.Remove(comp2.Nr);
+                                    con3Comp.Connections.Remove(comp3.Nr);
+                                    if (Day25CalculateConnectedComponents(componentsDictionary, startComp) != componentCount)
+                                    {
+                                        foundConnections = true;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        comp1.Connections.Add(con1);
+                                        comp2.Connections.Add(con2);
+                                        comp3.Connections.Add(con3);
+                                        if (!con1Comp.Connections.Contains(comp1.Nr))
+                                            con1Comp.Connections.Add(comp1.Nr);
+                                        if (!con2Comp.Connections.Contains(comp2.Nr))
+                                            con2Comp.Connections.Add(comp2.Nr);
+                                        if (!con3Comp.Connections.Contains(comp3.Nr))
+                                            con3Comp.Connections.Add(comp3.Nr);
+                                    }
+                                }
+                                if (foundConnections)
+                                    break;
+                            }
+                            if (foundConnections)
+                                break;
+                        }
+                        if (foundConnections)
+                            break;
+                    }
+                    if (foundConnections)
+                        break;
+                }
+                if (foundConnections)
+                    break;
+            }
+        }
+
+        private List<Day25Path> Day25FindPotentialConnections(Dictionary<string, Day25Component> componentsDictionary)
+        {
+            List<Day25Path> pathList = null;
+            foreach (Day25Component startComponent in componentsDictionary.Values)
+            {
+                foreach (Day25Component endComponent in componentsDictionary.Where(w => w.Key != startComponent.Nr).Select(s => s.Value))
+                {
+                    pathList = Day25FindThreePath(componentsDictionary, startComponent, endComponent);
+                    if (pathList != null)
+                        break;
+                }
+            }
+            return pathList;
+        }
+
+        private List<Day25Path> Day25FindThreePath(Dictionary<string, Day25Component> componentsDictionary, Day25Component startComponent, Day25Component endComponent)
+        {
+            HashSet<string> usedComponents = new HashSet<string>();
+            HashSet<string> usedComponentsPaths = new HashSet<string>();
+            List<Day25Path> pathList = new List<Day25Path>();
+            int nrOfPaths = 0;
+            while (true)
+            {
+                usedComponentsPaths.ToList().ForEach(e => usedComponents.Add(e));
+                PriorityQueue<Day25QueueItem, int> queue = new PriorityQueue<Day25QueueItem, int>();
+                Day25QueueItem currentComponent = new Day25QueueItem { Component = startComponent };
+                int jumps = 0;
+                queue.Enqueue(currentComponent, jumps);
+                bool foundEnd = false;
+                while (queue.TryDequeue(out currentComponent, out jumps))
+                {
+                    if (currentComponent.Component.Nr == endComponent.Nr)
+                    {
+                        if (nrOfPaths == 3)
+                            return null;
+                        foundEnd = true;
+                        nrOfPaths++;
+                        currentComponent.CurrentPath.ForEach(e => usedComponentsPaths.Add(e));
+                        pathList.Add(new Day25Path { End = endComponent.Nr, Start = startComponent.Nr, Path = currentComponent.CurrentPath });
+                        usedComponents = new HashSet<string>();
+                        break;
+                    }
+                    foreach (string connection in currentComponent.Component.Connections)
+                        if (!usedComponents.Contains(connection + "-" + currentComponent.Component.Nr)
+                            && !usedComponents.Contains(currentComponent.Component.Nr + "-" + connection))
+                        {
+                            usedComponents.Add(currentComponent.Component.Nr + "-" + connection);
+                            Day25QueueItem compCon = new Day25QueueItem { Component = componentsDictionary.GetValueOrDefault(connection) };
+                            currentComponent.CurrentPath.ForEach(e => compCon.CurrentPath.Add(e));
+                            compCon.CurrentPath.Add(currentComponent.Component.Nr + "-" + connection);
+                            queue.Enqueue(compCon, jumps + 1);
+                        }
+                }
+                if (!foundEnd)
+                    break;
+            }
+            return pathList;
+        }
+
+        private int Day25CalculateConnectedComponents(Dictionary<string, Day25Component> components, Day25Component currentComponent)
+        {
+            HashSet<string> connectedComponents = new HashSet<string>();
+            Queue<Day25Component> queue = new Queue<Day25Component>();
+            queue.Enqueue(currentComponent);
+            while (queue.TryDequeue(out currentComponent))
+            {
+                if (connectedComponents.Count() >= 1000)
+                    return components.Count();
+                if (!connectedComponents.Contains(currentComponent.Nr))
+                    connectedComponents.Add(currentComponent.Nr);
+                foreach (string connection in currentComponent.Connections)
+                    if (!connectedComponents.Contains(connection))
+                        queue.Enqueue(components.GetValueOrDefault(connection));
+            }
+            return connectedComponents.Count();
+        }
+
+        private class Day25QueueItem
+        {
+            public List<string> CurrentPath = new List<string>();
+            public Day25Component Component { get; set; }
+        }
+
+        private class Day25Component
+        {
+            public string Nr { get; set; }
+            public List<string> Connections = new List<string>();
+        }
+
+        private class Day25Path
+        {
+            public List<string> Path { get; set; }
+            public string Start { get; set; }
+            public string End { get; set; }
+        }
     }
 }
