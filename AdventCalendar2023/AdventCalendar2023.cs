@@ -3697,6 +3697,305 @@ namespace AdventCalendar2023
         }
 
         [TestMethod]
+        public void Day24_1()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day24.txt").ToList();
+            List<Day24HailStone> hailstones = new List<Day24HailStone>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split('@').ToList();
+                List<string> leftSideSplit = inputSplit[0].Split(',').ToList();
+                List<string> rightSideSplit = inputSplit[1].Split(',').ToList();
+                Day24HailStone hailstone = new Day24HailStone
+                {
+                    X = decimal.Parse(leftSideSplit[0].Trim()),
+                    Y = decimal.Parse(leftSideSplit[1].Trim()),
+                    Z = decimal.Parse(leftSideSplit[2].Trim()),
+                    Vx = decimal.Parse(rightSideSplit[0].Trim()),
+                    Vy = decimal.Parse(rightSideSplit[1].Trim()),
+                    Vz = decimal.Parse(rightSideSplit[2].Trim()),
+                };
+                hailstone.Slope = hailstone.Vy / hailstone.Vx;
+                hailstone.YIntercept = hailstone.Y - hailstone.Slope * hailstone.X;
+                hailstones.Add(hailstone);
+            }
+
+            int intersectCount = 0;
+            decimal xyMin = 200000000000000;
+            decimal xyMax = 400000000000000;
+            //decimal xyMin = 7;
+            //decimal xyMax = 27;
+            Day24HailStone line1, line2;
+            for (int h = 0; h < hailstones.Count(); h++)
+            {
+                line1 = hailstones[h];
+                for (int i = h + 1; i < hailstones.Count(); i++)
+                {
+                    line2 = hailstones[i];
+                    if (line1.Slope == line2.Slope)
+                        continue;
+                    decimal x = (line2.YIntercept - line1.YIntercept) / (line1.Slope - line2.Slope);
+                    decimal y = line1.Slope * x + line1.YIntercept;
+                    if (line1.Vx < 0 && x > line1.X || line1.Vx > 0 && x < line1.X)
+                        continue;
+                    if (line1.Vy < 0 && y > line1.Y || line1.Vy > 0 && y < line1.Y)
+                        continue;
+                    if (line2.Vx < 0 && x > line2.X || line2.Vx > 0 && x < line2.X)
+                        continue;
+                    if (line2.Vy < 0 && y > line2.Y || line2.Vy > 0 && y < line2.Y)
+                        continue;
+                    if (xyMin <= x && xyMax >= x && xyMin <= y && xyMax >= y)
+                    {
+                        intersectCount++;
+                        Debug.WriteLine("Line: " + h + " Line: " + i);
+                    }
+                }
+            }
+            Debug.WriteLine(intersectCount);
+        }
+
+        [TestMethod]
+        public void Day24_2()
+        {
+            List<string> inputList = File.ReadAllLines(@"Input\Day24.txt").ToList();
+            List<Day24HailStone> hailstones = new List<Day24HailStone>();
+            foreach (string input in inputList)
+            {
+                List<string> inputSplit = input.Split('@').ToList();
+                List<string> leftSideSplit = inputSplit[0].Split(',').ToList();
+                List<string> rightSideSplit = inputSplit[1].Split(',').ToList();
+                Day24HailStone hailstone = new Day24HailStone
+                {
+                    X = decimal.Parse(leftSideSplit[0].Trim()),
+                    Y = decimal.Parse(leftSideSplit[1].Trim()),
+                    Z = decimal.Parse(leftSideSplit[2].Trim()),
+                    Vx = decimal.Parse(rightSideSplit[0].Trim()),
+                    Vy = decimal.Parse(rightSideSplit[1].Trim()),
+                    Vz = decimal.Parse(rightSideSplit[2].Trim()),
+                    IsStone = false,
+                };
+                hailstone.Slope = hailstone.Vy / hailstone.Vx;
+                hailstone.YIntercept = hailstone.Y - hailstone.Slope * hailstone.X;
+                hailstones.Add(hailstone);
+            }
+            decimal minX = hailstones.Min(m => m.X);
+            decimal maxX = hailstones.Max(m => m.X);
+            decimal minY = hailstones.Min(m => m.Y);
+            decimal maxY = hailstones.Max(m => m.Y);
+            decimal minZ = hailstones.Min(m => m.Z);
+            decimal maxZ = hailstones.Max(m => m.Z);
+            decimal margin = (maxX - minX) * 0.000000000000000000000000001m;
+            Tuple<decimal, decimal> point = null;
+            decimal stoneX = 0, stoneY = 0, stoneZ = 0, stoneVx = 0, stoneVy = 0, stoneVz = 0;
+            for (int vY = 300; vY >= -300; vY--)
+            {
+                for (int vX = 300; vX >= -300; vX--)
+                {
+                    hailstones.ForEach(e => { e.Vx -= vX; e.Vy -= vY; });
+                    point = Day24ValidateIntersections(hailstones, margin);
+                    if (point != null)
+                    {
+                        Debug.WriteLine("True vX: " + vX + " vY: " + vY);
+                        stoneX = Math.Round(point.Item1);
+                        stoneY = Math.Round(point.Item2);
+                        Day24HailStone hailstone1 = hailstones.First();
+                        Day24HailStone hailstone2 = hailstones.Last();
+                        decimal time1 = (stoneX - hailstone1.X) / hailstone1.Vx;
+                        decimal time2 = (stoneX - hailstone2.X) / hailstone2.Vx;
+                        hailstones.ForEach(e => { e.Vx += vX; e.Vy += vY; });
+                        decimal x1 = hailstone1.X + hailstone1.Vx * time1;
+                        decimal y1 = hailstone1.Y + hailstone1.Vy * time1;
+                        decimal z1 = hailstone1.Z + hailstone1.Vz * time1;
+                        decimal x2 = hailstone2.X + hailstone2.Vx * time2;
+                        decimal y2 = hailstone2.Y + hailstone2.Vy * time2;
+                        decimal z2 = hailstone2.Z + hailstone2.Vz * time2;
+                        stoneVx = vX;
+                        stoneVy = vY;
+                        stoneVz = (z1 - z2) / (time1 - time2);
+                        stoneZ = z1 - stoneVz * time1;
+                        break;
+                    }
+                    else
+                        hailstones.ForEach(e => { e.Vx += vX; e.Vy += vY; });
+                }
+                if (point != null)
+                    break;
+            }
+
+            Debug.WriteLine(stoneX + stoneY + stoneZ); // 870379016024859
+
+            // this part is not needed for the solve. It is used to print the hailstorm
+            hailstones.Add(new Day24HailStone { X = stoneX, Y = stoneY, Z = stoneZ, Vx = stoneVx, Vy = stoneVy, Vz = stoneVz, IsStone = true });
+            foreach (Day24HailStone hailstone in hailstones)
+            {
+                decimal xTime = hailstone.Vx < 0 ? ((minX - hailstone.X) / hailstone.Vx) : ((maxX - hailstone.X) / hailstone.Vx);
+                decimal yTime = hailstone.Vy < 0 ? ((minY - hailstone.Y) / hailstone.Vy) : ((maxY - hailstone.Y) / hailstone.Vy);
+                decimal zTime = hailstone.Vz < 0 ? ((minZ - hailstone.Z) / hailstone.Vz) : ((maxZ - hailstone.Z) / hailstone.Vz);
+                hailstone.TimeLeft = Math.Min(Math.Min(xTime, yTime), zTime);
+            }
+            Day24SimulateTimeline(hailstones, hailstones.Average(m => m.TimeLeft));
+        }
+
+        private Tuple<decimal, decimal> Day24ValidateIntersections(List<Day24HailStone> hailstones, decimal margin)
+        {
+            Day24HailStone line1, line2;
+            decimal? pointX = null;
+            decimal? pointY = null;
+            decimal slope1, slope2, yIntersect1, yIntersect2;
+            bool foundPoint = false;
+            for (int h = 0; h < hailstones.Count(); h++)
+            {
+                line1 = hailstones[h];
+                for (int i = h + 1; i < hailstones.Count(); i++)
+                {
+                    line2 = hailstones[i];
+
+                    if (line1.Vy == 0 || line1.Vx == 0 || line2.Vy == 0 || line2.Vx == 0)
+                        continue;
+
+                    slope1 = line1.Vy / line1.Vx;
+                    yIntersect1 = line1.Y - slope1 * line1.X;
+                    slope2 = line2.Vy / line2.Vx;
+                    yIntersect2 = line2.Y - slope2 * line2.X;
+                    if (slope1 == slope2)
+                    {
+                        //if ((pointX - line1.X) / line1.Vx != (pointY - line1.Y) / line1.Vy)
+                        //    return null;
+                        //if ((pointX - line2.X) / line2.Vx != (pointY - line2.Y) / line2.Vy)
+                        //    return null;
+                        continue;
+                    }
+                    decimal x = (yIntersect2 - yIntersect1) / (slope1 - slope2);
+                    decimal y = slope1 * x + yIntersect1;
+                    if (line1.Vx < 0 && x > line1.X || line1.Vx > 0 && x < line1.X)
+                        return null;
+                    if (line1.Vy < 0 && y > line1.Y || line1.Vy > 0 && y < line1.Y)
+                        return null;
+                    if (line2.Vx < 0 && x > line2.X || line2.Vx > 0 && x < line2.X)
+                        return null;
+                    if (line2.Vy < 0 && y > line2.Y || line2.Vy > 0 && y < line2.Y)
+                        return null;
+
+                    if (pointX == null)
+                    {
+                        pointX = x;
+                        pointY = y;
+                        foundPoint = true;
+                        break;
+                    }
+                    else if ((Math.Abs((decimal)pointX - x) > margin) || (Math.Abs((decimal)pointY - y) > margin))
+                        return null;
+                }
+                if (foundPoint)
+                    break;
+            }
+            if (hailstones.Any(a => (a.Vx == 0 && (Math.Abs((decimal)pointX - a.X) > margin)) || (a.Vy == 0 && Math.Abs((decimal)pointY - a.Y) > margin)))
+                return null;
+            foreach (Day24HailStone hailstone in hailstones.Where(w => w.Vx != 0 && w.Vy != 0))
+            {
+                decimal distance1 = ((decimal)pointX - hailstone.X) / hailstone.Vx;
+                decimal distance2 = ((decimal)pointY - hailstone.Y) / hailstone.Vy;
+                if (!(distance1 < (distance2 + margin)) || !(distance1 > (distance2 - margin)))
+                    return null;
+            }
+            return new Tuple<decimal, decimal>((decimal)pointX, (decimal)pointY);
+        }
+
+        private void Day24SimulateTimeline(List<Day24HailStone> hailstones, decimal maxTime)
+        {
+            decimal minX = hailstones.Min(m => m.X);
+            decimal maxX = hailstones.Max(m => m.X);
+            decimal minY = hailstones.Min(m => m.Y);
+            decimal maxY = hailstones.Max(m => m.Y);
+            decimal minZ = hailstones.Min(m => m.Z);
+            decimal maxZ = hailstones.Max(m => m.Z);
+            decimal increment = maxTime / 100;
+            List<Day24Timeline> timeline = new List<Day24Timeline>();
+            Day24Print(hailstones, minX, minY, minZ, maxX, maxY, maxZ);
+            Debug.WriteLine("Time: " + 0 + " Count: " + hailstones.Count);
+            for (decimal i = increment; i < maxTime; i += increment)
+            {
+                List<Day24HailStone> remainingHailstones = hailstones.Where(w => w.X <= maxX && w.X >= minX && w.Y <= maxY && w.Y >= minY && w.Z <= maxZ && w.Z >= minZ).ToList();
+                if (remainingHailstones.Count() == 0)
+                    break;
+                Day24Timeline time = new Day24Timeline { Time = i, Count = remainingHailstones.Count() };
+                timeline.Add(time);
+                foreach (Day24HailStone hailstone in hailstones)
+                {
+                    hailstone.X += increment * hailstone.Vx;
+                    hailstone.Y += increment * hailstone.Vy;
+                    hailstone.Z += increment * hailstone.Vz;
+                }
+                Day24Print(hailstones, minX, minY, minZ, maxX, maxY, maxZ);
+                Debug.WriteLine("Time: " + (long)time.Time + " Count: " + time.Count);
+            }
+        }
+
+        private void Day24Print(List<Day24HailStone> hailstones, decimal minX, decimal minY, decimal minZ, decimal maxX, decimal maxY, decimal maxZ)
+        {
+            //Zoom
+            //maxX = maxX - (maxX - minX) / 8;
+            //minX = minX + (maxX - minX) / 2;
+            //maxY = maxY - (maxY - minY) / 3;
+            //minY = minY + (maxY - minY) / 2;
+            //Resolution
+            decimal xIncrement = (maxX - minX) / 200;
+            decimal yIncrement = (maxY - minY) / 50;
+
+            for (decimal y = minY; y <= maxY; y += yIncrement)
+            {
+                string row = string.Empty;
+                for (decimal x = minX; x <= maxX; x += xIncrement)
+                {
+                    Day24HailStone hailstone = hailstones.Where(w => (int)(w.X / xIncrement) == (int)(x / xIncrement) && (int)(w.Y / yIncrement) == (int)(y / yIncrement)
+                        && w.X <= maxX && w.X >= minX && w.Y <= maxY && w.Y >= minY && w.Z <= maxZ && w.Z >= minZ).OrderByDescending(o => o.IsStone).FirstOrDefault();
+                    if (hailstone == null)
+                        row += ".";
+                    else if (hailstone.IsStone)
+                        row += "S";
+                    else
+                    {
+                        if (Math.Abs(hailstone.Vx) > Math.Abs(hailstone.Vy))
+                        {
+                            if (hailstone.Vx > 0)
+                                row += ">";
+                            else
+                                row += "<";
+                        }
+                        else
+                        {
+                            if (hailstone.Vy > 0)
+                                row += "V";
+                            else
+                                row += "A";
+                        }
+                    }
+                }
+                Debug.WriteLine(row);
+            }
+        }
+
+        private class Day24Timeline
+        {
+            public decimal Time { get; set; }
+            public decimal Count { get; set; }
+        }
+
+        private class Day24HailStone
+        {
+            public decimal X { get; set; }
+            public decimal Y { get; set; }
+            public decimal Z { get; set; }
+            public decimal Vx { get; set; }
+            public decimal Vy { get; set; }
+            public decimal Vz { get; set; }
+            public decimal Slope { get; set; }
+            public decimal YIntercept { get; set; }
+            public decimal TimeLeft { get; set; }
+            public bool IsStone { get; set; }
+        }
+
+        [TestMethod]
         public void Day25()
         {
             List<Day25Component> components = Day25ParseInput(File.ReadAllLines(@"Input\Day25.txt").ToList());
